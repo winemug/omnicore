@@ -4,6 +4,8 @@ namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class RequestStatus : IMessagePart
 {
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.RequestStatus;
     public required PodStatusType StatusType { get; set; }
     public static IMessagePart ToInstance(Span<byte> span)
     {

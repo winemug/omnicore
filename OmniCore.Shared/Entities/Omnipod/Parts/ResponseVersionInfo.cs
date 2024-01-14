@@ -5,6 +5,8 @@ namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class ResponseVersionInfo : IMessagePart
 {
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.ResponseVersionInfo;
     public required int HardwareVersionMajor { get; init; }
     public required int HardwareVersionMinor { get; init; }
     public required int HardwareVersionRevision { get; init; }

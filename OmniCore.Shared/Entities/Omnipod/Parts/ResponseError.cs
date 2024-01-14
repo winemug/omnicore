@@ -1,7 +1,11 @@
-﻿namespace OmniCore.Shared.Entities.Omnipod.Parts;
+﻿using OmniCore.Shared.Enums;
+
+namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class ResponseError : IMessagePart
 {
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.ResponseError;
      public required byte Code { get; set; }
      public required byte[] Data { get; set; }
     public static IMessagePart ToInstance(Span<byte> span)

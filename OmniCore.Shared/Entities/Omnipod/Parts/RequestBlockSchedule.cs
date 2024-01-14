@@ -1,9 +1,12 @@
-﻿using OmniCore.Shared.Extensions;
+﻿using OmniCore.Shared.Enums;
+using OmniCore.Shared.Extensions;
 
 namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class RequestBlockSchedule : IMessagePart
 {
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.RequestInsulinSchedule;
     public required byte TableIndex { get; set; }
     public required int LeadBlockDuration125Milliseconds { get; set; }
     public required int LeadBlockPulseCount { get; set; }

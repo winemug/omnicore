@@ -5,6 +5,8 @@ namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class ResponseVersionInfoExtended : IMessagePart
 {
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.ResponseVersionInfo;
     public required int PulseVolumeMicroUnits { get; init; }
     public required int PulseRatePer125Ms { get; init; }
     public required int PrimingPulseRatePer125Ms { get; init; }

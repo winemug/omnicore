@@ -1,4 +1,5 @@
 ﻿using OmniCore.Client.Services;
+using OmniCore.Client.ViewModels;
 using OmniCore.Client.Views;
 
 namespace OmniCore.Client;
@@ -11,7 +12,7 @@ public partial class App : Application
     {
         InitializeComponent();
 
-        MainPage = navigationService.NavigationPage;
+        MainPage = navigationService.MainPage;
         this.navigationService = navigationService;
     }
 
@@ -30,7 +31,7 @@ public partial class App : Application
 
     private async void WindowOnCreated(object? sender, EventArgs e)
     {
-        await navigationService.PushViewAsync<EmptyPage>();
+        await navigationService.PushViewAsync<AuthenticationPage, AuthenticationModel>();
     }
     private async void WindowOnDeactivated(object? sender, EventArgs e)
     {

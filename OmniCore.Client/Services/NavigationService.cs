@@ -10,38 +10,38 @@ namespace OmniCore.Client.Services;
 
 public class NavigationService
 {
-    public NavigationPage NavigationPage { get; }
-    public INavigation Navigation => this.NavigationPage.Navigation;
+    public NavigationPage MainPage { get; }
+    public INavigation Navigation => this.MainPage.Navigation;
 
     private ViewModel? _activeModel;
     private readonly IServiceProvider _serviceProvider;
 
     public NavigationService(IServiceProvider serviceProvider)
     {
-        NavigationPage = new NavigationPage();
+        MainPage = new NavigationPage();
         _serviceProvider = serviceProvider;
         _activeModel = null;
     }
 
-    public async ValueTask PushViewAsync<TView>()
+    public async ValueTask PushViewAsync<TView>(bool setRoot = false)
     where TView : Page
     {
         await NavigateAway(_activeModel);
         var view = _serviceProvider.GetRequiredService<TView>();
-        await NavigateTo(view);
+        await NavigateTo(null, view, setRoot) ;
     }
 
-    public async ValueTask PushViewAsync<TView, TModel>()
+    public async ValueTask PushViewAsync<TView, TModel>(bool setRoot = false)
         where TView : Page
         where TModel : ViewModel
     {
         await NavigateAway(_activeModel);
         var model = _serviceProvider.GetRequiredService<TModel>();
         var view = _serviceProvider.GetRequiredService<TView>();
-        await NavigateTo(model, view);
+        await NavigateTo(model, view, setRoot);
     }
 
-    public async ValueTask PushDataViewAsync<TView, TModel, TModelData>(TModelData data)
+    public async ValueTask PushDataViewAsync<TView, TModel, TModelData>(TModelData data, bool setRoot = false)
         where TView : Page
         where TModel : DataViewModel<TModelData>
         where TModelData : notnull
@@ -52,7 +52,7 @@ public class NavigationService
         var view = _serviceProvider.GetRequiredService<TView>();
         await model.LoadDataAsync(data);
 
-        await NavigateTo(model, view);
+        await NavigateTo(model, view, setRoot);
     }
 
     private async ValueTask NavigateAway(ViewModel? model)
@@ -67,18 +67,24 @@ public class NavigationService
         }
     }
 
-    private async ValueTask NavigateTo(Page view)
+    private async ValueTask NavigateTo(ViewModel? model, Page view, bool setRoot)
     {
-        _activeModel = null;
-        await Navigation.PushAsync(view, true);
-    }
-
-    private async ValueTask NavigateTo(ViewModel model, Page view)
-    {
-        await model.BindToView(view);
-        await model.OnNavigatingTo();
+        if (model != null)
+        {
+            await model.BindToView(view);
+            await model.OnNavigatingTo();
+        }
         _activeModel = model;
-        await Navigation.PushAsync(view, true);
+        
+        if (setRoot && Navigation.NavigationStack.Count > 0)
+        {
+            Navigation.InsertPageBefore(view, Navigation.NavigationStack[0]);
+            await Navigation.PopToRootAsync(true);
+        }
+        else
+        {
+            await Navigation.PushAsync(view, true);
+        }
     }
     public ValueTask OnWindowActivatedAsync()
     {

@@ -5,6 +5,8 @@ namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class RequestConfigureAlerts : IMessagePart
 {
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.RequestConfigureAlerts;
     public required AlertConfiguration[] AlertConfigurations { get; set; }
     public static IMessagePart ToInstance(Span<byte> span)
     {

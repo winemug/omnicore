@@ -10,6 +10,8 @@ namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class ResponseInfoExtendedStatus : IMessagePart
 {
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.ResponseInfo;
     public required bool ExtendedBolusActive { get; init; }
     public required bool ImmediateBolusActive { get; init; }
     public required bool TempBasalActive { get; init; }

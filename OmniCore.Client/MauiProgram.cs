@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using OmniCore.Client.Platforms;
 using OmniCore.Client.Services;
+using OmniCore.Client.ViewModels;
 using OmniCore.Client.Views;
 
 namespace OmniCore.Client;
@@ -24,9 +25,10 @@ public static class MauiProgram
 #endif
 
         builder.Services
-            .AddTransient<EmptyPage>()
-
             .AddSingleton<NavigationService>()
+            .AddTransient<EmptyPage>()
+            .AddTransient<AuthenticationModel>()
+            .AddTransient<AuthenticationPage>()
 
             .RegisterPlatformServices();
 

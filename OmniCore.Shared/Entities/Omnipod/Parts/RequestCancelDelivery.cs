@@ -5,6 +5,8 @@ namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class RequestCancelDelivery : IMessagePart
 {
+    public bool RequiresNonce => true;
+    public PodMessagePartType MessagePartType => PodMessagePartType.RequestCancelDelivery;
      public BeepType Beep { get; set; }
      public bool StopExtendedBolus { get; set; }
      public bool StopBolus { get; set; }

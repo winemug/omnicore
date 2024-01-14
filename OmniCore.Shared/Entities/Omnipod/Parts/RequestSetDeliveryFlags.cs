@@ -1,7 +1,11 @@
-﻿namespace OmniCore.Shared.Entities.Omnipod.Parts;
+﻿using OmniCore.Shared.Enums;
+
+namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class RequestSetDeliveryFlags : IMessagePart
 {
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.RequestSetDeliveryFlags;
     public required byte VerificationFlag0 { get; set; }
     public required byte VerificationFlag1 { get; set; }
     public static IMessagePart ToInstance(Span<byte> span)

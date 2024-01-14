@@ -1,9 +1,12 @@
-﻿using OmniCore.Shared.Extensions;
+﻿using OmniCore.Shared.Enums;
+using OmniCore.Shared.Extensions;
 
 namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class RequestAssignAddress : IMessagePart
 {
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.RequestAssignAddress;
     public uint Address { get; set; }
 
     public static IMessagePart ToInstance(Span<byte> span)

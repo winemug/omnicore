@@ -1,9 +1,12 @@
-﻿using OmniCore.Shared.Extensions;
+﻿using OmniCore.Shared.Enums;
+using OmniCore.Shared.Extensions;
 
 namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class RequestSetupPod : IMessagePart
 {
+    public bool RequiresNonce => true;
+    public PodMessagePartType MessagePartType => PodMessagePartType.RequestSetupPod;
     public int PacketTimeout { get; set; } = 50;
     public uint RadioAddress { get; set; }
     public uint Lot { get; set; }

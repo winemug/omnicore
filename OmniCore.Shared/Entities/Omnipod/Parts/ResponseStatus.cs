@@ -5,6 +5,8 @@ namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class ResponseStatus : IMessagePart
 {
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.ResponseStatus;
     public required bool ExtendedBolusActive { get; init; }
     public required bool ImmediateBolusActive { get; init; }
     public required bool TempBasalActive { get; init; }
@@ -35,7 +37,6 @@ public class ResponseStatus : IMessagePart
             PulsesRemaining = (int) span.ReadBits(62, 10)
         };
     }
-
     public int ToBytes(Span<byte> span)
     {
         span.WriteBit(ExtendedBolusActive, 0);

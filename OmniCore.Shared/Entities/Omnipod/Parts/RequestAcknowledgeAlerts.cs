@@ -1,7 +1,11 @@
-﻿namespace OmniCore.Shared.Entities.Omnipod.Parts;
+﻿using OmniCore.Shared.Enums;
+
+namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class RequestAcknowledgeAlerts : IMessagePart
 {
+    public bool RequiresNonce => true;
+    public PodMessagePartType MessagePartType => PodMessagePartType.RequestAcknowledgeAlerts;
     public required bool[] AlertIndices { get; set; }
 
     public static IMessagePart ToInstance(Span<byte> span)

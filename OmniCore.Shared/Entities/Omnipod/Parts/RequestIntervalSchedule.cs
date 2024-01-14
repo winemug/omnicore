@@ -1,37 +1,38 @@
-﻿using OmniCore.Shared.Extensions;
+﻿using OmniCore.Shared.Enums;
+using OmniCore.Shared.Extensions;
 
 namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
-public class RequestIntervalSchedule : IMessagePart
+public class RequestIntervalSchedule
 {
-    public required ushort LeadPulses10Count { get; set; }
-    public required uint LeadPulse10DelayMicroseconds { get; set; }
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.RequestInsulinSchedule;
+    public ushort LeadPulses10Count { get; set; }
+    public uint LeadPulse10DelayMicroseconds { get; set; }
     public byte ActiveIndex { get; set; }
-    public required PulseInterval[] Pulse10Intervals { get; set; }
-    public required bool BeepWhenSet { get; set; }
+    public PulseInterval[] Pulse10Intervals { get; set; }
+    public bool BeepWhenSet { get; set; }
     public bool BeepWhenFinished { get; set; }
 
-    public static IMessagePart ToInstance(Span<byte> span, bool withIndex)
+    protected static void SetInstance(RequestIntervalSchedule instance, Span<byte> span, bool withIndex)
     {
         if (withIndex)
-            return new RequestIntervalSchedule
-            {
-                BeepWhenSet = span[0] == 0x80,
-                ActiveIndex = span[1],
-                LeadPulses10Count = span[2..].Read16(),
-                LeadPulse10DelayMicroseconds = span[4..].Read32(),
-                Pulse10Intervals = GetPulseIntervals(span[8..])
-            };
+        {
+            instance.BeepWhenSet = span[0] == 0x80;
+            instance.ActiveIndex = span[1];
+            instance.LeadPulses10Count = span[2..].Read16();
+            instance.LeadPulse10DelayMicroseconds = span[4..].Read32();
+            instance.Pulse10Intervals = GetPulseIntervals(span[8..]);
+        }
         else
-            return new RequestIntervalSchedule
-            {
-                BeepWhenSet = span[0] == 0x80,
-                LeadPulses10Count = span[1..].Read16(),
-                LeadPulse10DelayMicroseconds = span[3..].Read32(),
-                Pulse10Intervals = GetPulseIntervals(span[7..])
-            };
+        {
+            instance.BeepWhenSet = span[0] == 0x80;
+            instance.LeadPulses10Count = span[1..].Read16();
+            instance.LeadPulse10DelayMicroseconds = span[3..].Read32();
+            instance.Pulse10Intervals = GetPulseIntervals(span[7..]);
+        }
     }
-    public int ToBytes(Span<byte> span, bool withIndex)
+    protected int ToBytes(Span<byte> span, bool withIndex)
     {
         int idx = 0;
         if (BeepWhenSet)

@@ -5,6 +5,8 @@ namespace OmniCore.Shared.Entities.Omnipod.Parts;
 
 public class RequestBeepConfig : IMessagePart
 {
+    public bool RequiresNonce => false;
+    public PodMessagePartType MessagePartType => PodMessagePartType.RequestBeepConfig;
     public BeepType BeepNow { get; set; }
     public bool OnBasalStart { get; set; }
     public bool OnBasalEnd { get; set; }
