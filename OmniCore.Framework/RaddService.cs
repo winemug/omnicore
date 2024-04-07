@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using OmniCore.Common.Amqp;
 using OmniCore.Services.Interfaces.Amqp;
 using OmniCore.Services.Interfaces.Core;
 using OmniCore.Services.Interfaces.Pod;
@@ -37,6 +38,8 @@ public class RaddService : IRaddService
         if (message.Type != null)
             return false;
 
+        var userId = message.UserId;
+
         var rr = JsonSerializer.Deserialize<RaddRequest>(message.Text);
         if (rr == null)
             return false;
@@ -46,6 +49,7 @@ public class RaddService : IRaddService
             var pods = await _podService.GetPodsAsync();
             var podsmsg = new AmqpMessage
             {
+                Route = userId,
                 Text = JsonSerializer.Serialize(
                     new
                     {
@@ -54,21 +58,23 @@ public class RaddService : IRaddService
                         success = true
                     })
             };
-            await _amqpService.PublishMessage(podsmsg);
+            await _amqpService.PublishMessage(podsmsg, AmqpDestination.Response);
             return true;
         }
 
         if (rr.remove)
         {
             await _podService.RemovePodAsync(Guid.Parse(rr.pod_id));
-            await _amqpService.PublishMessage(new AmqpMessage { Text = JsonSerializer.Serialize(
-             new RaddResponse
-             {
-                 success = true,
-                 request_id = rr.request_id,
-                 id = rr.pod_id,
-             }
-                ) });
+            await _amqpService.PublishMessage(new AmqpMessage {
+                Route = userId,
+                Text = JsonSerializer.Serialize(
+                 new RaddResponse
+                 {
+                     success = true,
+                     request_id = rr.request_id,
+                     id = rr.pod_id,
+                 }
+                ) }, AmqpDestination.Response);
             return true;
         }
 
@@ -78,7 +84,7 @@ public class RaddService : IRaddService
 
         if (rr.create)
         {
-            requestPodId = await _podService.NewPodAsync(new Guid("7D799596-3F6D-48E2-AC65-33CA6396788B"), rr.create_units.Value, (MedicationType)rr.create_medication.Value);
+            requestPodId = await _podService.NewPodAsync(new Guid("7D799596-3F6D-48E2-AC65-33CA6396788B"), rr.create_units.Value, (MedicationType)rr.create_medication.Value, rr.create_radio_address);
         }
 
         var pod = await _podService.GetPodAsync(requestPodId);
@@ -173,8 +179,8 @@ public class RaddService : IRaddService
             medication = (int?)(pod?.Medication),
             units = pod?.UnitsPerMilliliter
         };
-        var respMessage = new AmqpMessage { Text = JsonSerializer.Serialize(resp) };
-        await _amqpService.PublishMessage(respMessage);
+        var respMessage = new AmqpMessage {Route = userId, Text = JsonSerializer.Serialize(resp) };
+        await _amqpService.PublishMessage(respMessage, AmqpDestination.Response);
 
         return true;
         
@@ -207,6 +213,7 @@ public class RaddRequest
     public bool create { get; set; }
     public int? create_units { get; set; }
     public int? create_medication { get; set; }
+    public uint? create_radio_address { get; set; }
     public bool prime { get; set; }
     public bool start { get; set; }
     public int start_basal_ticks_per_hour { get; set; }

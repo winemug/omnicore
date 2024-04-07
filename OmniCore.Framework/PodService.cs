@@ -111,7 +111,8 @@ public class PodService : IPodService
     public async Task<Guid> NewPodAsync(
         Guid profileId,
         int unitsPerMilliliter,
-        MedicationType medicationType)
+        MedicationType medicationType,
+        uint? radioAddress)
     {
         if (_appConfiguration.ClientAuthorization == null)
             throw new ApplicationException("Client not registered");
@@ -120,12 +121,16 @@ public class PodService : IPodService
         
         var b = new byte[4];
         new Random().NextBytes(b);
+        if (!radioAddress.HasValue)
+        {
+            radioAddress = (uint)(b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3]);
+        }
         var pod = new Pod
         {
             PodId = Guid.NewGuid(),
             ClientId = _appConfiguration.ClientAuthorization.ClientId,
             ProfileId = profileId,
-            RadioAddress = (uint)(b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3]),
+            RadioAddress = radioAddress.Value,
             UnitsPerMilliliter = unitsPerMilliliter,
             Medication = medicationType,
         };

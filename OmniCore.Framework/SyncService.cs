@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Nito.AsyncEx;
+using OmniCore.Common.Amqp;
 using OmniCore.Common.Data;
 using OmniCore.Common.Pod;
 using OmniCore.Services.Interfaces.Amqp;
@@ -165,9 +166,9 @@ public class SyncService : ISyncService
                 {
                     Text = JsonSerializer.Serialize(pod),
                     Type = "Pod",
-                    Route = "sync",
+                    Route = "*",
                     OnPublishConfirmed = OnPodSynced(pod.PodId),
-                });
+                }, AmqpDestination.Sync);
                 await Task.Yield();
             }
 
@@ -178,9 +179,9 @@ public class SyncService : ISyncService
                 {
                     Text = JsonSerializer.Serialize(podAction),
                     Type = "PodAction",
-                    Route = "sync",
+                    Route = "*",
                     OnPublishConfirmed = OnPodActionSynced(podAction.PodId, podAction.Index),
-                });
+                }, AmqpDestination.Sync);
                 await Task.Yield();
             }
         }

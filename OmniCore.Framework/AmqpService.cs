@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Nito.AsyncEx;
+using OmniCore.Common.Amqp;
 using OmniCore.Common.Api;
 using OmniCore.Services.Interfaces;
 using OmniCore.Services.Interfaces.Amqp;
@@ -73,10 +74,12 @@ public class AmqpService : IAmqpService
         }
     }
 
-    public async Task PublishMessage(AmqpMessage message)
+    public async Task PublishMessage(AmqpMessage message, AmqpDestination destination)
     {
+
         try
         {
+            message.Destination = destination;
             await _publishQueue.EnqueueAsync(message);
         }
         catch (Exception e)
@@ -94,6 +97,7 @@ public class AmqpService : IAmqpService
 
         AmqpEndpointDefinition? endpointDefinition = new AmqpEndpointDefinition
         {
+
         };
         //while (true)
         //{
@@ -192,11 +196,20 @@ public class AmqpService : IAmqpService
         cancellationToken.ThrowIfCancellationRequested();
 
         using var subChannel = connection.CreateModel();
+        var queueName = $"q_{endpointDefinition.UserId}";
+        subChannel.QueueDeclare(queueName, true, true, false);
+        subChannel.ExchangeDeclare(endpointDefinition.RequestExchange, "direct", true, false);
+        subChannel.QueueBind(queueName, endpointDefinition.RequestExchange, endpointDefinition.UserId);
+        subChannel.ExchangeDeclare(endpointDefinition.ResponseExchange, "direct", true, false);
+        subChannel.ExchangeDeclare(endpointDefinition.SyncExchange, "direct", true, false);
+
         var consumer = new AsyncEventingBasicConsumer(subChannel);
         consumer.Received += async (sender, ea) =>
         {
             var message = new AmqpMessage
             {
+                UserId = ea.BasicProperties.UserId,
+                Route = ea.RoutingKey,
                 Type = ea.BasicProperties.Type,
                 Body = ea.Body.ToArray(),
             };
@@ -215,7 +228,7 @@ public class AmqpService : IAmqpService
             }
             await Task.Yield();
         };
-        subChannel.BasicConsume(endpointDefinition.Queue, false, consumer);
+        subChannel.BasicConsume(queueName, false, consumer);
         cancellationToken.ThrowIfCancellationRequested();
 
 
@@ -241,9 +254,11 @@ public class AmqpService : IAmqpService
                     var properties = pubChannel.CreateBasicProperties();
                     properties.UserId = endpointDefinition.UserId;
                     properties.Type = message.Type;
+
+
                     var sequenceNo = pubChannel.NextPublishSeqNo;
                     Debug.WriteLine($"publishing seq {sequenceNo} {message.Text}");
-                    pubChannel.BasicPublish(endpointDefinition.Exchange, message.Route, false,
+                    pubChannel.BasicPublish(endpointDefinition.ResponseExchange, message.Route, false,
                         properties, Encoding.UTF8.GetBytes(message.Text));
                     pubChannel.WaitForConfirmsOrDie();
                     if (message.OnPublishConfirmed != null)

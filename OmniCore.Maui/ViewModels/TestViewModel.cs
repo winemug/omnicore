@@ -88,7 +88,7 @@ public class TestViewModel : BaseViewModel
 
     private async Task ExecuteNewPod()
     {
-        var podId = await _podService.NewPodAsync(new Guid("7D799596-3F6D-48E2-AC65-33CA6396788B"), 100, MedicationType.Insulin);
+        var podId = await _podService.NewPodAsync(new Guid("7D799596-3F6D-48E2-AC65-33CA6396788B"), 100, MedicationType.Insulin, null);
         // var pods = await _podService.GetPodsAsync();
         // var pod = pods[1];
         // using (var pc = await _podService.GetConnectionAsync(pod))
