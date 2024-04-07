@@ -6,6 +6,7 @@ namespace OmniCore.Services.Interfaces.Core;
 
 public interface IAmqpService : ICoreService
 {
-    Task PublishMessage(AmqpMessage message, AmqpDestination destination);
-    void RegisterMessageProcessor(Func<AmqpMessage, Task<bool>> function);
+    Task PublishMessage(AmqpMessage message);
+
+    void RegisterMessageProcessorCallback(AmqpDestination destination, Func<AmqpMessage, Task<bool>> callback);
 }

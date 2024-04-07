@@ -3,9 +3,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyModel.Resolution;
 using Nito.AsyncEx;
 using OmniCore.Common.Amqp;
 using OmniCore.Common.Api;
@@ -30,8 +33,6 @@ public class AmqpService : IAmqpService
     private readonly AsyncProducerConsumerQueue<AmqpMessage> _publishQueue;
     private readonly AsyncProducerConsumerQueue<Task> _confirmQueue;
 
-    private ConcurrentBag<Func<AmqpMessage, Task<bool>>> _messageProcessors;
-
     private IAppConfiguration _appConfiguration;
     private IApiClient _apiClient;
     private IPlatformInfo _platformInfo;
@@ -46,7 +47,6 @@ public class AmqpService : IAmqpService
         
         _publishQueue = new AsyncProducerConsumerQueue<AmqpMessage>();
         _confirmQueue = new AsyncProducerConsumerQueue<Task>();
-        _messageProcessors = new ConcurrentBag<Func<AmqpMessage, Task<bool>>>();
     }
 
     public async Task Start()
@@ -74,12 +74,10 @@ public class AmqpService : IAmqpService
         }
     }
 
-    public async Task PublishMessage(AmqpMessage message, AmqpDestination destination)
+    public async Task PublishMessage(AmqpMessage message)
     {
-
         try
         {
-            message.Destination = destination;
             await _publishQueue.EnqueueAsync(message);
         }
         catch (Exception e)
@@ -97,38 +95,7 @@ public class AmqpService : IAmqpService
 
         AmqpEndpointDefinition? endpointDefinition = new AmqpEndpointDefinition
         {
-
         };
-        //while (true)
-        //{
-        //    try
-        //    {
-        //        var result = await _apiClient.PostRequestAsync<ClientJoinRequest, ClientJoinResponse>(
-        //            Routes.ClientJoinRequestRoute, new ClientJoinRequest
-        //            {
-        //                Id = _appConfiguration.ClientAuthorization.ClientId,
-        //                Token = _appConfiguration.ClientAuthorization.Token,
-        //                Version = _platformInfo.GetVersion(),
-        //            }, cancellationToken);
-        //        if (result is { Success: true })
-        //        {
-        //            endpointDefinition = new AmqpEndpointDefinition
-        //            {
-        //                Dsn = result.Dsn,
-        //                Exchange = result.Exchange,
-        //                Queue = result.Queue,
-        //                UserId = result.Username
-        //            };
-        //            break;
-        //        }
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Console.WriteLine(e);
-        //        throw;
-        //    }
-        //    await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
-        //}
         
         var confirmationsTask = ConfirmationsTask(cancellationToken);
         while(true)
@@ -167,16 +134,21 @@ public class AmqpService : IAmqpService
             await Task.Yield();
         }
     }
-
-    private async Task ConnectAndPublishLoop(AmqpEndpointDefinition endpointDefinition,
-        CancellationToken cancellationToken)
-    {
+         private bool CertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain,
+        SslPolicyErrors sslpolicyerrors)
+        {
+        return true;
+        }
+        private async Task ConnectAndPublishLoop(AmqpEndpointDefinition endpointDefinition,
+          CancellationToken cancellationToken)
+       {
         var connectionFactory = new ConnectionFactory
         {
             Uri = new Uri(endpointDefinition.Dsn),
             DispatchConsumersAsync = true,
-            AutomaticRecoveryEnabled = false,
+            AutomaticRecoveryEnabled = false,            
         };
+        connectionFactory.Ssl.CertificateValidationCallback = CertificateValidationCallback;
         Debug.WriteLine("connecting");
         using var connection = Policy<IConnection>
             .Handle<Exception>()
@@ -195,40 +167,40 @@ public class AmqpService : IAmqpService
         pubChannel.ConfirmSelect();
         cancellationToken.ThrowIfCancellationRequested();
 
-        using var subChannel = connection.CreateModel();
-        var queueName = $"q_{endpointDefinition.UserId}";
-        subChannel.QueueDeclare(queueName, true, true, false);
-        subChannel.ExchangeDeclare(endpointDefinition.RequestExchange, "direct", true, false);
-        subChannel.QueueBind(queueName, endpointDefinition.RequestExchange, endpointDefinition.UserId);
-        subChannel.ExchangeDeclare(endpointDefinition.ResponseExchange, "direct", true, false);
-        subChannel.ExchangeDeclare(endpointDefinition.SyncExchange, "direct", true, false);
-
-        var consumer = new AsyncEventingBasicConsumer(subChannel);
-        consumer.Received += async (sender, ea) =>
+        var queueRequests = $"q_req_{endpointDefinition.UserId}";
+        var queueResponses = $"q_rsp_{endpointDefinition.UserId}";
+        var queueSync = $"q_sync_{endpointDefinition.UserId}";
+        using (var createChannel = connection.CreateModel())
         {
-            var message = new AmqpMessage
-            {
-                UserId = ea.BasicProperties.UserId,
-                Route = ea.RoutingKey,
-                Type = ea.BasicProperties.Type,
-                Body = ea.Body.ToArray(),
-            };
-            try
-            {
-                bool success = await ProcessMessage(message);
-                if (success)
-                    subChannel.BasicAck(ea.DeliveryTag, false);
-                else
-                    subChannel.BasicNack(ea.DeliveryTag, false, true);
-            }
-            catch (Exception e)
-            {
-                subChannel.BasicNack(ea.DeliveryTag, false, true);
-                Trace.WriteLine($"Message processing failed: {e}");
-            }
-            await Task.Yield();
-        };
-        subChannel.BasicConsume(queueName, false, consumer);
+            createChannel.QueueDeclare(queueRequests, true, true, false);
+            createChannel.ExchangeDeclare(endpointDefinition.RequestExchange, "direct", true, false);
+            createChannel.QueueBind(queueRequests, endpointDefinition.RequestExchange, endpointDefinition.UserId);
+
+            createChannel.QueueDeclare(queueSync, true, true, false);
+            createChannel.ExchangeDeclare(endpointDefinition.SyncExchange, "direct", true, false);
+            createChannel.QueueBind(queueSync, endpointDefinition.SyncExchange, endpointDefinition.UserId);
+
+            createChannel.QueueDeclare(queueResponses, true, true, false);
+            createChannel.ExchangeDeclare(endpointDefinition.ResponseExchange, "direct", true, false);
+            createChannel.QueueBind(queueResponses, endpointDefinition.ResponseExchange, endpointDefinition.UserId);
+        }
+
+        using var requestSubChannel = connection.CreateModel();
+        var requestsConsumer = new AsyncEventingBasicConsumer(requestSubChannel);
+        requestsConsumer.Received += async (sender, ea) => await ProcessMessage(ea, requestSubChannel, AmqpDestination.Request);
+        requestSubChannel.BasicConsume(queueRequests, false, requestsConsumer);
+
+        using var responseSubChannel = connection.CreateModel();
+        var responseConsumer = new AsyncEventingBasicConsumer(requestSubChannel);
+        responseConsumer.Received += async (sender, ea) => await ProcessMessage(ea, responseSubChannel, AmqpDestination.Response);
+        responseSubChannel.BasicConsume(queueResponses, false, responseConsumer);
+
+        using var syncSubChannel = connection.CreateModel();
+        var syncConsumer = new AsyncEventingBasicConsumer(requestSubChannel);
+        syncConsumer.Received += async (sender, ea) => await ProcessMessage(ea, responseSubChannel, AmqpDestination.Sync);
+        syncSubChannel.BasicConsume(queueSync, false, syncConsumer);
+
+
         cancellationToken.ThrowIfCancellationRequested();
 
 
@@ -258,7 +230,8 @@ public class AmqpService : IAmqpService
 
                     var sequenceNo = pubChannel.NextPublishSeqNo;
                     Debug.WriteLine($"publishing seq {sequenceNo} {message.Text}");
-                    pubChannel.BasicPublish(endpointDefinition.ResponseExchange, message.Route, false,
+
+                    pubChannel.BasicPublish(message.Exchange, message.Route, false,
                         properties, Encoding.UTF8.GetBytes(message.Text));
                     pubChannel.WaitForConfirmsOrDie();
                     if (message.OnPublishConfirmed != null)
@@ -276,29 +249,74 @@ public class AmqpService : IAmqpService
         }
     }
 
+    private async Task ProcessMessage(BasicDeliverEventArgs ea, IModel subChannel, AmqpDestination destination)
+    {
+        var message = new AmqpMessage(destination, ea.RoutingKey, ea.BasicProperties.Type, ea.BasicProperties.UserId)
+        {
+            Body = ea.Body.ToArray(),
+        };
+        try
+        {
+            bool success = await ProcessMessage(message);
+            if (success)
+                subChannel.BasicAck(ea.DeliveryTag, false);
+            else
+                subChannel.BasicNack(ea.DeliveryTag, false, true);
+        }
+        catch (Exception e)
+        {
+            subChannel.BasicNack(ea.DeliveryTag, false, true);
+            Trace.WriteLine($"Message processing failed: {e}");
+        }
+        await Task.Yield();
+    }
+
     private async Task<bool> ProcessMessage(AmqpMessage message)
     {
         Debug.WriteLine($"Incoming amqp message: {message.Text}");
-        var processed = false;
-        foreach (var pf in _messageProcessors)
+        try
         {
-            try
+            switch (message.Destination)
             {
-                processed = await pf(message);
-                if (processed)
-                    break;
-            }
-            catch (Exception e)
-            {
-                Trace.Write($"Error while processing {e}");
+                case AmqpDestination.Request:
+                    if (callbackRequests != null)
+                        return await callbackRequests(message);
+                    return false;
+                case AmqpDestination.Response:
+                    if (callbackResponses != null)
+                        return await callbackResponses(message);
+                    return false;
+                case AmqpDestination.Sync:
+                    if (callbackSync != null)
+                        return await callbackSync(message);
+                    return false;
+                default:
+                    return false;
             }
         }
-        return true;
-        return processed;
+        catch (Exception e)
+        {
+            Trace.Write($"Error while processing {e}");
+            return false;
+        }
+
     }
-    
-    public void RegisterMessageProcessor(Func<AmqpMessage, Task<bool>> function)
+
+
+    private Func<AmqpMessage, Task<bool>> callbackRequests;
+    private Func<AmqpMessage, Task<bool>> callbackResponses;
+    private Func<AmqpMessage, Task<bool>> callbackSync;
+    public void RegisterMessageProcessorCallback(AmqpDestination destination, Func<AmqpMessage, Task<bool>> callback)
     {
-        _messageProcessors.Add(function);
+        switch (destination)
+        {
+            case AmqpDestination.Request:
+                callbackRequests = callback; break;
+            case AmqpDestination.Response:
+                callbackResponses = callback; break;
+            case AmqpDestination.Sync:
+                callbackSync = callback; break;
+        }
+
     }
 }

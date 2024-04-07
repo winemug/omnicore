@@ -32,8 +32,17 @@ public class SyncService : ISyncService
     }
     public async Task Start()
     {
+        //await using (var context = new OcdbContext())
+        //{
+        //    var podsToSync = await context.Pods.ToListAsync();
+        //    var podActionsToSync = await context.PodActions.ToListAsync();
+
+        //    await context.Pods.ExecuteUpdateAsync(setters => setters.SetProperty(p => p.IsSynced, false));
+        //    await context.PodActions.ExecuteUpdateAsync(setters => setters.SetProperty(p => p.IsSynced, false));
+
+        //}
         _syncTask = SyncTask(_ctsSync.Token);
-        //_amqpService.RegisterMessageProcessor(ProcessMessageAsync);
+        _amqpService.RegisterMessageProcessorCallback(AmqpDestination.Sync, ProcessMessageAsync);
     }
 
     public async Task<bool> ProcessMessageAsync(AmqpMessage message)
@@ -78,6 +87,7 @@ public class SyncService : ISyncService
             pod.RadioAddress = mpod.RadioAddress;
             pod.Created = mpod.Created;
             pod.Removed = mpod.Removed;
+            pod.IsSynced = true;
         }
         else
         {
@@ -90,7 +100,8 @@ public class SyncService : ISyncService
                 Medication = (MedicationType)mpod.Medication,
                 UnitsPerMilliliter = mpod.UnitsPerMilliliter,
                 RadioAddress = mpod.RadioAddress,
-                Removed = mpod.Removed
+                Removed = mpod.Removed,
+                IsSynced = true
             };
             await context.Pods.AddAsync(pod);
         }
@@ -126,7 +137,8 @@ public class SyncService : ISyncService
             RequestSentLatest = mpa.RequestSentLatest,
             Result = (Shared.Enums.AcceptanceType)mpa.Result,
             SentData = mpa.SentData,
-            ReceivedData = mpa.ReceivedData
+            ReceivedData = mpa.ReceivedData,
+            IsSynced = true
         };
 
         await context.PodActions.AddAsync(pa);
@@ -151,37 +163,34 @@ public class SyncService : ISyncService
 
     private async Task SyncTask(CancellationToken cancellationToken)
     {
-        while(true)
+        while (true)
         {
             await _syncTriggerEvent.WaitAsync(cancellationToken);
+            Debug.WriteLine($"Sync triggered");
             await using var context = new OcdbContext();
             var podsToSync = await context.Pods.Where(p => !p.IsSynced).ToListAsync();
             var podActionsToSync = await context.PodActions.Where(pa => !pa.IsSynced).ToListAsync();
             await context.DisposeAsync();
-
+            Debug.WriteLine($"{podsToSync.Count} Pods and {podActionsToSync.Count} Actions will be synced");
             foreach (var pod in podsToSync)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await _amqpService.PublishMessage(new AmqpMessage
+                await _amqpService.PublishMessage(new AmqpMessage(AmqpDestination.Sync, "ocs", "Pod", "occ")
                 {
                     Text = JsonSerializer.Serialize(pod),
-                    Type = "Pod",
-                    Route = "*",
                     OnPublishConfirmed = OnPodSynced(pod.PodId),
-                }, AmqpDestination.Sync);
+                });
                 await Task.Yield();
             }
 
             foreach (var podAction in podActionsToSync)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await _amqpService.PublishMessage(new AmqpMessage
+                await _amqpService.PublishMessage(new AmqpMessage(AmqpDestination.Sync, "ocs", "PodAction", "occ")
                 {
                     Text = JsonSerializer.Serialize(podAction),
-                    Type = "PodAction",
-                    Route = "*",
                     OnPublishConfirmed = OnPodActionSynced(podAction.PodId, podAction.Index),
-                }, AmqpDestination.Sync);
+                });
                 await Task.Yield();
             }
         }
@@ -199,11 +208,11 @@ public class SyncService : ISyncService
         if (pod != null)
         {
             pod.IsSynced = true;
-            if (pod.Removed != null)
-            {
-                await context.PodActions.Where(pa => pa.PodId == pod.PodId).ExecuteDeleteAsync();
-                await context.Pods.Where(p => p.PodId == pod.PodId).ExecuteDeleteAsync();
-            }
+            //if (pod.Removed != null)
+            //{
+            //    await context.PodActions.Where(pa => pa.PodId == pod.PodId).ExecuteDeleteAsync();
+            //    await context.Pods.Where(p => p.PodId == pod.PodId).ExecuteDeleteAsync();
+            //}
 
             await context.SaveChangesAsync();
         }

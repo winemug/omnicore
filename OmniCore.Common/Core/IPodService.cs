@@ -5,6 +5,7 @@ namespace OmniCore.Services.Interfaces.Core;
 
 public interface IPodService : ICoreService
 {
+    Task Refresh();
     Task<Guid> NewPodAsync(
         Guid profileId,
         int unitsPerMilliliter,

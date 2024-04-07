@@ -26,7 +26,7 @@ public class RaddService : IRaddService
 
     public async Task Start()
     {
-        _amqpService.RegisterMessageProcessor(ProcessMessageAsync);
+        _amqpService.RegisterMessageProcessorCallback(AmqpDestination.Request, ProcessMessageAsync);
     }
 
     public async Task Stop()
@@ -46,10 +46,10 @@ public class RaddService : IRaddService
 
         if (string.IsNullOrEmpty(rr.pod_id) && !rr.create)
         {
+            await _podService.Refresh();
             var pods = await _podService.GetPodsAsync();
-            var podsmsg = new AmqpMessage
+            var podsmsg = new AmqpMessage(AmqpDestination.Response, userId)
             {
-                Route = userId,
                 Text = JsonSerializer.Serialize(
                     new
                     {
@@ -58,15 +58,15 @@ public class RaddService : IRaddService
                         success = true
                     })
             };
-            await _amqpService.PublishMessage(podsmsg, AmqpDestination.Response);
+            await _amqpService.PublishMessage(podsmsg);
             return true;
         }
 
         if (rr.remove)
         {
             await _podService.RemovePodAsync(Guid.Parse(rr.pod_id));
-            await _amqpService.PublishMessage(new AmqpMessage {
-                Route = userId,
+            await _amqpService.PublishMessage(new AmqpMessage(AmqpDestination.Response, userId)
+            {
                 Text = JsonSerializer.Serialize(
                  new RaddResponse
                  {
@@ -74,7 +74,7 @@ public class RaddService : IRaddService
                      request_id = rr.request_id,
                      id = rr.pod_id,
                  }
-                ) }, AmqpDestination.Response);
+                ) });
             return true;
         }
 
@@ -179,8 +179,8 @@ public class RaddService : IRaddService
             medication = (int?)(pod?.Medication),
             units = pod?.UnitsPerMilliliter
         };
-        var respMessage = new AmqpMessage {Route = userId, Text = JsonSerializer.Serialize(resp) };
-        await _amqpService.PublishMessage(respMessage, AmqpDestination.Response);
+        var respMessage = new AmqpMessage(AmqpDestination.Response, userId) { Text = JsonSerializer.Serialize(resp) };
+        await _amqpService.PublishMessage(respMessage);
 
         return true;
         
