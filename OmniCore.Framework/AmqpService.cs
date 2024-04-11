@@ -196,7 +196,7 @@ public class AmqpService : IAmqpService
         responseSubChannel.BasicConsume(queueResponses, false, responseConsumer);
 
         using var syncSubChannel = connection.CreateModel();
-        var syncConsumer = new AsyncEventingBasicConsumer(requestSubChannel);
+        var syncConsumer = new AsyncEventingBasicConsumer(syncSubChannel);
         syncConsumer.Received += async (sender, ea) => await ProcessMessage(ea, responseSubChannel, AmqpDestination.Sync);
         syncSubChannel.BasicConsume(queueSync, false, syncConsumer);
 
