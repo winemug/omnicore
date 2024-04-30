@@ -67,7 +67,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CommunityToolkit.Maui" Version="8.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.4">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -75,8 +74,8 @@
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.4" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
         <PackageReference Include="Polly" Version="8.3.1" />
-        <PackageReference Update="Microsoft.Maui.Controls" Version="8.0.20" />
-        <PackageReference Update="Microsoft.Maui.Controls.Compatibility" Version="8.0.20" />
+        <PackageReference Update="Microsoft.Maui.Controls" Version="8.0.21" />
+        <PackageReference Update="Microsoft.Maui.Controls.Compatibility" Version="8.0.21" />
     </ItemGroup>
 
     <ItemGroup>
