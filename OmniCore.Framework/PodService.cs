@@ -118,9 +118,8 @@ public class PodService : IPodService
         // }
     }
 
-    public async Task<List<IPodModel>> GetPodsAsync(Guid? profileId)
+    public async Task<List<IPodModel>> GetPodsAsync()
     {
-        //TODO: profile filter
         return _podModels.OrderByDescending(pm => pm.Created).ToList();
     }
 
@@ -146,12 +145,12 @@ public class PodService : IPodService
     }
     
     public async Task<Guid> NewPodAsync(
-        Guid profileId,
         int unitsPerMilliliter,
         MedicationType medicationType,
         uint? radioAddress)
     {
-        if (_appConfiguration.ClientAuthorization == null)
+        var configuration = await _appConfiguration.Get();
+        if (configuration == null)
             throw new ApplicationException("Client not registered");
 
         using var ocdb = new OcdbContext();
@@ -165,8 +164,8 @@ public class PodService : IPodService
         var pod = new Pod
         {
             PodId = Guid.NewGuid(),
-            ClientId = _appConfiguration.ClientAuthorization.ClientId,
-            ProfileId = profileId,
+            ClientId = configuration.ClientId,
+            ProfileId = configuration.DefaultProfileId,
             RadioAddress = radioAddress.Value,
             UnitsPerMilliliter = unitsPerMilliliter,
             Medication = medicationType,
@@ -182,14 +181,15 @@ public class PodService : IPodService
     }
 
     public async Task ImportPodAsync(
-        Guid profileId,
         uint radioAddress, int unitsPerMilliliter,
         MedicationType medicationType,
         uint lot,
         uint serial
         )
     {
-        if (_appConfiguration.ClientAuthorization == null)
+        
+        var configuration = await _appConfiguration.Get();
+        if (configuration == null)
             throw new ApplicationException("Client not registered");
         
         using var ocdb = new OcdbContext();
@@ -199,8 +199,8 @@ public class PodService : IPodService
         var pod = new Pod
         {
             PodId = Guid.NewGuid(),
-            ClientId = _appConfiguration.ClientAuthorization.ClientId,
-            ProfileId = profileId, 
+            ClientId = configuration.ClientId,
+            ProfileId = configuration.DefaultProfileId, 
             RadioAddress = radioAddress,
             UnitsPerMilliliter = unitsPerMilliliter,
             Medication = medicationType,
@@ -224,7 +224,8 @@ public class PodService : IPodService
         IPodModel podModel,
         CancellationToken cancellationToken = default)
     {
-        if (_appConfiguration.ClientAuthorization == null)
+        var configuration = await _appConfiguration.Get();
+        if (configuration == null)
             throw new ApplicationException("Client not registered");
         
         var radioConnection = await _radioService.GetIdealConnectionAsync(cancellationToken);
@@ -232,7 +233,7 @@ public class PodService : IPodService
             throw new ApplicationException("No radios available");
 
         var allocationLockDisposable = await _podLocks[podModel.Id].LockAsync(cancellationToken);
-        var clientId = _appConfiguration.ClientAuthorization.ClientId;
+        var clientId = configuration.ClientId;
 
         return new PodConnection(
             clientId,

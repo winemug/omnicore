@@ -46,7 +46,6 @@ public static class MauiProgram
 	    
         mauiAppBuilder.AddMapping<WelcomePage, WelcomeViewModel>();
         mauiAppBuilder.AddMapping<TestPage, TestViewModel>();
-        mauiAppBuilder.AddMapping<TestPage2, TestViewModel2>();
 	    
 	    mauiAppBuilder.Services.AddSingleton<AppShell>();
         mauiAppBuilder.Services.AddSingleton<IAppConfiguration, AppConfiguration>();

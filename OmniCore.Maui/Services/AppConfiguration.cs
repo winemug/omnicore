@@ -8,58 +8,23 @@ namespace OmniCore.Maui.Services;
 public class AppConfiguration : IAppConfiguration
 {
     private IPlatformInfo _platformInfo;
+    private OmniCoreConfiguration? _configuration;
     public AppConfiguration(IPlatformInfo platformInfo)
     {
         _platformInfo = platformInfo;
-    }
-    
-#if DEBUG
-    public Uri ApiAddress => new Uri("http://192.168.1.50:5097");
-#else
-    public Uri ApiAddress => new Uri("https://api.balya.net:8080");
-#endif
-    public string? AccountEmail
-    {
-        get => Preferences.Get(nameof(AccountEmail), null);
-        set => Preferences.Set(nameof(AccountEmail), value);
+        var val = Preferences.Get(nameof(OmniCoreConfiguration), null);
+        _configuration = JsonSerializerWrapper.TryDeserialize<OmniCoreConfiguration>(val);
     }
 
-    public bool AccountVerified
+    public async Task Set(OmniCoreConfiguration configuration)
     {
-        get => Preferences.Get(nameof(AccountVerified), false);
-        set => Preferences.Set(nameof(AccountVerified), value);
+        var strVal = JsonSerializerWrapper.TrySerialize(configuration);
+        Preferences.Set(nameof(OmniCoreConfiguration), strVal);
+        _configuration = configuration;
     }
 
-    public string ClientName
+    public async Task<OmniCoreConfiguration?> Get()
     {
-        get
-        {
-            var name = Preferences.Get(nameof(ClientName), null);
-            if (name == null)
-                name = _platformInfo.GetUserName();
-            return name;
-        }
-        set => Preferences.Set(nameof(ClientName), value);
-    }
-    
-    private ClientAuthorization? _clientAuthorization;
-    public ClientAuthorization? ClientAuthorization
-    {
-        get
-        {
-            if (_clientAuthorization == null)
-            {
-                var val = Preferences.Get(nameof(ClientAuthorization), null);
-                _clientAuthorization = JsonSerializerWrapper.TryDeserialize<ClientAuthorization>(val);
-            }
-
-            return _clientAuthorization;
-        }
-        set
-        {
-            _clientAuthorization = value;
-            var strVal = JsonSerializerWrapper.TrySerialize(value);
-            Preferences.Set(nameof(ClientAuthorization), strVal);
-        }
+        return _configuration;
     }
 }

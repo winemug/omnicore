@@ -29,9 +29,10 @@ public class AmqpService : IAmqpService
 {
     private Task _amqpTask;
     private CancellationTokenSource _cts;
-    
+    private readonly X509Certificate2Collection _caCertificateCollection;
+
     private readonly AsyncProducerConsumerQueue<AmqpMessage> _publishQueue;
-    private readonly AsyncProducerConsumerQueue<Task> _confirmQueue;
+    private readonly AsyncProducerConsumerQueue<AmqpMessage> _confirmQueue;
 
     private IAppConfiguration _appConfiguration;
     private IApiClient _apiClient;
@@ -44,33 +45,42 @@ public class AmqpService : IAmqpService
         _appConfiguration = appConfiguration;
         _apiClient = apiClient;
         _platformInfo = platformInfo;
-        
+
         _publishQueue = new AsyncProducerConsumerQueue<AmqpMessage>();
-        _confirmQueue = new AsyncProducerConsumerQueue<Task>();
+
+        _caCertificateCollection = new X509Certificate2Collection
+        {
+            X509Certificate2.CreateFromPem(ApiConstants.RootCertificate),
+            X509Certificate2.CreateFromPem(ApiConstants.CaCertificate)
+        };
     }
 
     public async Task Start()
     {
         _cts = new CancellationTokenSource();
-        _amqpTask = Task.Run(async () => await StartJoin(_cts.Token));
+        _amqpTask = Task.Run(async () => await ServiceTask(_cts.Token));
     }
 
     public async Task Stop()
     {
         try
         {
-            _cts?.Cancel();
-            _amqpTask?.GetAwaiter().GetResult();
+            await _cts.CancelAsync();
+            await _amqpTask;
         }
-        catch (TaskCanceledException) { }
+        catch (OperationCanceledException)
+        {
+        }
         catch (Exception e)
         {
             Debug.WriteLine($"Error while cancelling core task: {e}");
         }
         finally
         {
-            _cts?.Dispose();
-            _cts = null;
+            foreach (var caCert in _caCertificateCollection)
+            {
+                caCert.Dispose();
+            }
         }
     }
 
@@ -86,167 +96,157 @@ public class AmqpService : IAmqpService
             throw;
         }
     }
-    private async Task StartJoin(CancellationToken cancellationToken)
-    {
-        while (_appConfiguration.ClientAuthorization == null)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
-        }
 
-        AmqpEndpointDefinition? endpointDefinition = new AmqpEndpointDefinition
+    private async Task ServiceTask(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
         {
-        };
-        
-        var confirmationsTask = ConfirmationsTask(cancellationToken);
-        while(true)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
+            var configuration = await _appConfiguration.Get();
+            while (configuration == null)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                configuration = await _appConfiguration.Get();
+            }
+
             try
             {
-                await ConnectAndPublishLoop(endpointDefinition, cancellationToken);
+                await AmqpSequence(configuration, cancellationToken);
             }
-            catch(TaskCanceledException)
+            catch (Exception e)
             {
-                await confirmationsTask;
-                throw;
-            }
-            catch(Exception e)
-            {
+                cancellationToken.ThrowIfCancellationRequested();
                 Trace.WriteLine($"Error while connectandpublish: {e.Message}");
                 await Task.Delay(15000);
             }
         }
     }
 
-    private async Task ConfirmationsTask(CancellationToken cancellationToken)
+    private async Task<IConnection> TryCreateConnection(string amqpConnectionString, X509Certificate2 clientCertificate,
+        CancellationToken cancellationToken = default)
     {
-        while(await _confirmQueue.OutputAvailableAsync(cancellationToken))
-        {
-            var confirmTask = await _confirmQueue.DequeueAsync(cancellationToken);
-            try
-            {
-                await confirmTask;
-            }
-            catch (Exception e)
-            {
-                Trace.WriteLine($"Error in user function handling publish confirmation: {e.Message}");
-            }
-            await Task.Yield();
-        }
-    }
-         private bool CertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain,
-        SslPolicyErrors sslpolicyerrors)
-        {
-        return true;
-        }
-        private async Task ConnectAndPublishLoop(AmqpEndpointDefinition endpointDefinition,
-          CancellationToken cancellationToken)
-       {
         var connectionFactory = new ConnectionFactory
         {
-            Uri = new Uri(endpointDefinition.Dsn),
-            DispatchConsumersAsync = true,
-            AutomaticRecoveryEnabled = false,            
+            Uri = new Uri(amqpConnectionString),
+            RequestedHeartbeat = TimeSpan.FromSeconds(30),
+            AutomaticRecoveryEnabled = false,
+            AuthMechanisms = new IAuthMechanismFactory[] { new ExternalMechanismFactory() },
         };
-        connectionFactory.Ssl.CertificateValidationCallback = CertificateValidationCallback;
-        Debug.WriteLine("connecting");
-        using var connection = Policy<IConnection>
+
+        connectionFactory.Ssl.CertificateSelectionCallback = (_, _, _, _, _) => clientCertificate;
+        connectionFactory.Ssl.AcceptablePolicyErrors = SslPolicyErrors.RemoteCertificateChainErrors;
+        connectionFactory.Ssl.CertificateValidationCallback = (_, _, _, _) => true;
+
+        return Policy<IConnection>
             .Handle<Exception>()
             .WaitAndRetryForever(
-            sleepDurationProvider: retries =>
-            {
-                return TimeSpan.FromSeconds(Math.Min(retries * 3, 60));
-            },
-            onRetry: (ex, ts) =>
-            {
-                Trace.WriteLine($"Error {ex}, waiting {ts} to reconnect");
-            }).Execute((_) => { return connectionFactory.CreateConnection(); }, cancellationToken);
-        Debug.WriteLine("connected");
+                sleepDurationProvider: retries => { return TimeSpan.FromSeconds(Math.Min(retries * 3, 60)); },
+                onRetry: (ex, ts) => { Trace.WriteLine($"Error {ex}, waiting {ts} to reconnect"); })
+            .Execute((_) => connectionFactory.CreateConnection(), cancellationToken);
+    }
 
-        using var pubChannel = connection.CreateModel();
-        pubChannel.ConfirmSelect();
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var queueRequests = $"q_req_{endpointDefinition.UserId}";
-        var queueResponses = $"q_rsp_{endpointDefinition.UserId}";
-        var queueSync = $"q_sync_{endpointDefinition.UserId}";
-        using (var createChannel = connection.CreateModel())
+    private async Task<IModel> CreateSubscription(string queue, string exchange, string routingKey,
+        IConnection connection, AmqpDestination destination, CancellationToken cancellationToken = default)
+    {
+        using (var cmdChannel = connection.CreateModel())
         {
-            createChannel.QueueDeclare(queueRequests, true, true, false);
-            createChannel.ExchangeDeclare(endpointDefinition.RequestExchange, "direct", true, false);
-            createChannel.QueueBind(queueRequests, endpointDefinition.RequestExchange, endpointDefinition.UserId);
-
-            createChannel.QueueDeclare(queueSync, true, true, false);
-            createChannel.ExchangeDeclare(endpointDefinition.SyncExchange, "direct", true, false);
-            createChannel.QueueBind(queueSync, endpointDefinition.SyncExchange, endpointDefinition.UserId);
-
-            createChannel.QueueDeclare(queueResponses, true, true, false);
-            createChannel.ExchangeDeclare(endpointDefinition.ResponseExchange, "direct", true, false);
-            createChannel.QueueBind(queueResponses, endpointDefinition.ResponseExchange, endpointDefinition.UserId);
+            cmdChannel.QueueDeclare(queue, true, false, false);
+            cmdChannel.ExchangeDeclare(exchange, "direct", true, false);
+            cmdChannel.QueueBind(queue, exchange, routingKey);
         }
+        
+        var subChannel = connection.CreateModel();
+        var consumer = new AsyncEventingBasicConsumer(subChannel);
+        consumer.Received += async (sender, ea) =>
+            await ProcessMessage(ea, subChannel, destination);
+        subChannel.BasicConsume(queue, false, consumer);
+        return subChannel;
+    }
 
-        using var requestSubChannel = connection.CreateModel();
-        var requestsConsumer = new AsyncEventingBasicConsumer(requestSubChannel);
-        requestsConsumer.Received += async (sender, ea) => await ProcessMessage(ea, requestSubChannel, AmqpDestination.Request);
-        requestSubChannel.BasicConsume(queueRequests, false, requestsConsumer);
+    private async Task AmqpMessageLoop(
+        IConnection connection,
+        IModel pubChannel,
+        OmniCoreConfiguration configuration,
+        CancellationToken cancellationToken = default)
+    {
+        var confirmList = new List<AmqpMessage>();
 
-        using var responseSubChannel = connection.CreateModel();
-        var responseConsumer = new AsyncEventingBasicConsumer(requestSubChannel);
-        responseConsumer.Received += async (sender, ea) => await ProcessMessage(ea, responseSubChannel, AmqpDestination.Response);
-        responseSubChannel.BasicConsume(queueResponses, false, responseConsumer);
-
-        using var syncSubChannel = connection.CreateModel();
-        var syncConsumer = new AsyncEventingBasicConsumer(syncSubChannel);
-        syncConsumer.Received += async (sender, ea) => await ProcessMessage(ea, responseSubChannel, AmqpDestination.Sync);
-        syncSubChannel.BasicConsume(queueSync, false, syncConsumer);
-
-
-        cancellationToken.ThrowIfCancellationRequested();
-
-
-        while (true)
+        try
         {
-            var result = false;
-            try
+            while (!cancellationToken.IsCancellationRequested && connection.IsOpen)
             {
-                result = await Policy.TimeoutAsync(30)
-                    .ExecuteAsync((t) => _publishQueue.OutputAvailableAsync(t), cancellationToken);
-            }
-            catch (TimeoutRejectedException ex) { }
-
-            if (!connection.IsOpen)
-                break;
-
-            if (result)
-            {
-                var message = await _publishQueue.DequeueAsync(cancellationToken);
-                // cancellation ignored below this point
+                AmqpMessage? publishMessage = null;
                 try
                 {
-                    var properties = pubChannel.CreateBasicProperties();
-                    properties.UserId = endpointDefinition.UserId;
-                    properties.Type = message.Type;
-
-
-                    var sequenceNo = pubChannel.NextPublishSeqNo;
-                    Debug.WriteLine($"publishing seq {sequenceNo} {message.Text}");
-
-                    pubChannel.BasicPublish(message.Exchange, message.Route, false,
-                        properties, Encoding.UTF8.GetBytes(message.Text));
-                    pubChannel.WaitForConfirmsOrDie();
-                    if (message.OnPublishConfirmed != null)
-                    {
-                        await _confirmQueue.EnqueueAsync(message.OnPublishConfirmed);
-                    }
+                    publishMessage = await Policy.TimeoutAsync(15)
+                        .ExecuteAsync((t) => _publishQueue.DequeueAsync(t), cancellationToken);
                 }
-                catch
+                catch (TimeoutRejectedException)
                 {
-                    await _publishQueue.EnqueueAsync(message);
-                    throw;
+                }
+            
+                if (publishMessage != null)
+                {
+                    confirmList.Add(publishMessage);
+                    var properties = pubChannel.CreateBasicProperties();
+                    properties.UserId = configuration.UserId;
+                    properties.Type = publishMessage.Type;
+                    pubChannel.BasicPublish(publishMessage.Exchange, publishMessage.Route, false,
+                        properties, Encoding.UTF8.GetBytes(publishMessage.Text));
+                    continue;
+                }
+            
+                pubChannel.WaitForConfirmsOrDie(TimeSpan.FromSeconds(30));
+                
+                if (confirmList.Count > 0)
+                {
+                    var confirmTasks = confirmList.Where(m => m.OnPublishConfirmed != null)
+                        .Select(m => (Task)m.OnPublishConfirmed).ToList();
+                    confirmList = new List<AmqpMessage>();
+                    Task.Run(async () =>
+                    {
+                        foreach(var task in confirmTasks)
+                            try
+                            {
+                                await task;
+                            }
+                            catch
+                            {
+                            }
+                    });
                 }
             }
-            await Task.Yield();
         }
+        finally
+        {
+            foreach (var msg in confirmList)
+                await _publishQueue.EnqueueAsync(msg);
+        }
+    }
+    private async Task AmqpSequence(OmniCoreConfiguration configuration, CancellationToken cancellationToken)
+    {
+        using var certWithKey = X509Certificate2.CreateFromPem(configuration.ClientCertificate, configuration.ClientKey);
+        var data = certWithKey.Export(X509ContentType.Pkcs12);
+        using var clientCertificate = new X509Certificate2(data, "", X509KeyStorageFlags.DefaultKeySet);
+
+        using var connection =
+            await TryCreateConnection(configuration.AmqpConnectionString, clientCertificate, cancellationToken);
+
+        using var subChannel1 = await CreateSubscription($"q_req_{configuration.UserId}", configuration.RequestExchange,
+            configuration.UserId, connection, AmqpDestination.Request, cancellationToken);
+
+        using var subChannel2 = await CreateSubscription($"q_rsp_{configuration.UserId}", configuration.ResponseExchange,
+            configuration.UserId, connection, AmqpDestination.Request, cancellationToken);
+
+        using var subChannel3 = await CreateSubscription($"q_sync_{configuration.UserId}", configuration.SyncExchange,
+            configuration.UserId, connection, AmqpDestination.Request, cancellationToken);
+        
+        using var pubChannel = connection.CreateModel();
+        pubChannel.ConfirmSelect();
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await AmqpMessageLoop(connection, pubChannel, configuration, cancellationToken);
     }
 
     private async Task ProcessMessage(BasicDeliverEventArgs ea, IModel subChannel, AmqpDestination destination)
@@ -257,7 +257,7 @@ public class AmqpService : IAmqpService
         };
         try
         {
-            bool success = await ProcessMessage(message);
+            bool success = await CallProcessHandler(message);
             if (success)
                 subChannel.BasicAck(ea.DeliveryTag, false);
             else
@@ -268,10 +268,11 @@ public class AmqpService : IAmqpService
             subChannel.BasicNack(ea.DeliveryTag, false, true);
             Trace.WriteLine($"Message processing failed: {e}");
         }
+
         await Task.Yield();
     }
 
-    private async Task<bool> ProcessMessage(AmqpMessage message)
+    private async Task<bool> CallProcessHandler(AmqpMessage message)
     {
         Debug.WriteLine($"Incoming amqp message: {message.Text}");
         try
@@ -299,24 +300,26 @@ public class AmqpService : IAmqpService
             Trace.Write($"Error while processing {e}");
             return false;
         }
-
     }
 
 
     private Func<AmqpMessage, Task<bool>> callbackRequests;
     private Func<AmqpMessage, Task<bool>> callbackResponses;
     private Func<AmqpMessage, Task<bool>> callbackSync;
+
     public void RegisterMessageProcessorCallback(AmqpDestination destination, Func<AmqpMessage, Task<bool>> callback)
     {
         switch (destination)
         {
             case AmqpDestination.Request:
-                callbackRequests = callback; break;
+                callbackRequests = callback;
+                break;
             case AmqpDestination.Response:
-                callbackResponses = callback; break;
+                callbackResponses = callback;
+                break;
             case AmqpDestination.Sync:
-                callbackSync = callback; break;
+                callbackSync = callback;
+                break;
         }
-
     }
 }

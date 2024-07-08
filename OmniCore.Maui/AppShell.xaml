@@ -8,9 +8,9 @@
 
     <FlyoutItem>
         <ShellContent
-            Title="Test2"
-            ContentTemplate="{DataTemplate views:TestPage}"
-            Route="TestPage" />
+            Title="Welcome"
+            ContentTemplate="{DataTemplate views:WelcomePage}"
+            Route="welcome" />
     </FlyoutItem>
 
 </Shell>

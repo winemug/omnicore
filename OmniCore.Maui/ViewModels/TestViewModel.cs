@@ -50,28 +50,9 @@ public class TestViewModel : BaseViewModel
         _radioService = radioService;
 
         StopCommand = new Command(async () => await ExecuteStop());
-        NewPodCommand = new Command(async () => await ExecuteNewPod());
-        PrimeCommand = new Command(async () => await ExecutePrime());
-        StartCommand = new Command(async () => await ExecuteStartPod());
-
-        if (_appConfiguration.AccountEmail == null)
-        {
-            _appConfiguration.AccountEmail = "barisk@gmail.com";
-        }
-
-        if (!_appConfiguration.AccountVerified)
-        {
-            _appConfiguration.AccountVerified = true;
-        }
-
-        if (_appConfiguration.ClientAuthorization == null)
-        {
-            _appConfiguration.ClientAuthorization = new ClientAuthorization
-            {
-                ClientId = new Guid("EE843C96-A312-4D4B-B0CC-93E22D6E680E"),
-                Token = new byte[16]
-            };
-        }
+        // NewPodCommand = new Command(async () => await ExecuteNewPod());
+        // PrimeCommand = new Command(async () => await ExecutePrime());
+        // StartCommand = new Command(async () => await ExecuteStartPod());
     }
 
     public override async ValueTask OnAppearing()
@@ -86,44 +67,44 @@ public class TestViewModel : BaseViewModel
         _platformService.StopService();
     }
 
-    private async Task ExecuteNewPod()
-    {
-        var podId = await _podService.NewPodAsync(new Guid("7D799596-3F6D-48E2-AC65-33CA6396788B"), 100, MedicationType.Insulin, null);
-        // var pods = await _podService.GetPodsAsync();
-        // var pod = pods[1];
-        // using (var pc = await _podService.GetConnectionAsync(pod))
-        // {
-        //     await pc.Deactivate();
-        // }
-    }
-    
-    private async Task ExecutePrime()
-    {
-        var pods = await _podService.GetPodsAsync();
-        var pod = pods[0];
-        using (var pc = await _podService.GetConnectionAsync(pod))
-        {
-            var now = DateTime.Now;
-            var res = await pc.PrimePodAsync(new DateOnly(now.Year, now.Month, now.Day),
-                new TimeOnly(now.Hour, now.Minute, now.Second),
-                true, CancellationToken.None);
-        }
-    }
-
-    private async Task ExecuteStartPod()
-    {
-        var pods = await _podService.GetPodsAsync();
-        var pod = pods[0];
-        using (var pc = await _podService.GetConnectionAsync(pod))
-        {
-            var now = DateTime.Now;
-            var basalRateTicks = new int[48];
-            for (int i = 0; i < 48; i++)
-                basalRateTicks[i] = 12;
-
-            var res = await pc.StartPodAsync(
-                new TimeOnly(now.Hour, now.Minute, now.Second), basalRateTicks);
-        }
-    }
+    // private async Task ExecuteNewPod()
+    // {
+    //     var podId = await _podService.NewPodAsync(new Guid("7D799596-3F6D-48E2-AC65-33CA6396788B"), 100, MedicationType.Insulin, null);
+    //     // var pods = await _podService.GetPodsAsync();
+    //     // var pod = pods[1];
+    //     // using (var pc = await _podService.GetConnectionAsync(pod))
+    //     // {
+    //     //     await pc.Deactivate();
+    //     // }
+    // }
+    //
+    // private async Task ExecutePrime()
+    // {
+    //     var pods = await _podService.GetPodsAsync();
+    //     var pod = pods[0];
+    //     using (var pc = await _podService.GetConnectionAsync(pod))
+    //     {
+    //         var now = DateTime.Now;
+    //         var res = await pc.PrimePodAsync(new DateOnly(now.Year, now.Month, now.Day),
+    //             new TimeOnly(now.Hour, now.Minute, now.Second),
+    //             true, CancellationToken.None);
+    //     }
+    // }
+    //
+    // private async Task ExecuteStartPod()
+    // {
+    //     var pods = await _podService.GetPodsAsync();
+    //     var pod = pods[0];
+    //     using (var pc = await _podService.GetConnectionAsync(pod))
+    //     {
+    //         var now = DateTime.Now;
+    //         var basalRateTicks = new int[48];
+    //         for (int i = 0; i < 48; i++)
+    //             basalRateTicks[i] = 12;
+    //
+    //         var res = await pc.StartPodAsync(
+    //             new TimeOnly(now.Hour, now.Minute, now.Second), basalRateTicks);
+    //     }
+    // }
 
 }

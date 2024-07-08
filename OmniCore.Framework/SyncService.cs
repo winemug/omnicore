@@ -163,7 +163,7 @@ public class SyncService : ISyncService
 
     private async Task SyncTask(CancellationToken cancellationToken)
     {
-        while (true)
+        while (!cancellationToken.IsCancellationRequested)
         {
             await _syncTriggerEvent.WaitAsync(cancellationToken);
             Debug.WriteLine($"Sync triggered");
@@ -175,7 +175,7 @@ public class SyncService : ISyncService
             foreach (var pod in podsToSync)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await _amqpService.PublishMessage(new AmqpMessage(AmqpDestination.Sync, "ocs", "Pod", "occ")
+                await _amqpService.PublishMessage(new AmqpMessage(AmqpDestination.Sync, "radd", "Pod")
                 {
                     Text = JsonSerializer.Serialize(pod),
                     OnPublishConfirmed = OnPodSynced(pod.PodId),
@@ -186,7 +186,7 @@ public class SyncService : ISyncService
             foreach (var podAction in podActionsToSync)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await _amqpService.PublishMessage(new AmqpMessage(AmqpDestination.Sync, "ocs", "PodAction", "occ")
+                await _amqpService.PublishMessage(new AmqpMessage(AmqpDestination.Sync, "radd", "PodAction")
                 {
                     Text = JsonSerializer.Serialize(podAction),
                     OnPublishConfirmed = OnPodActionSynced(podAction.PodId, podAction.Index),

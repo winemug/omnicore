@@ -13,6 +13,13 @@ public record AmqpMessage
         Route = route;
     }
 
+    public AmqpMessage(AmqpDestination destination, string route, string type)
+    {
+        Destination = destination;
+        Type = type;
+        Exchange = GetExchange(destination);
+        Route = route;
+    }
     public AmqpMessage(AmqpDestination destination, string route, string? type, string fromUserId)
     {
         UserId = fromUserId;
@@ -49,5 +56,5 @@ public record AmqpMessage
         get => Encoding.UTF8.GetString(Body);
         set => Body = Encoding.UTF8.GetBytes(value);
     }
-    public Task OnPublishConfirmed { get; set; }
+    public Task? OnPublishConfirmed { get; set; }
 }

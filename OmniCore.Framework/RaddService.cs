@@ -84,7 +84,7 @@ public class RaddService : IRaddService
 
         if (rr.create)
         {
-            requestPodId = await _podService.NewPodAsync(new Guid("7D799596-3F6D-48E2-AC65-33CA6396788B"), rr.create_units.Value, (MedicationType)rr.create_medication.Value, rr.create_radio_address);
+            requestPodId = await _podService.NewPodAsync(rr.create_units.Value, (MedicationType)rr.create_medication.Value, rr.create_radio_address);
         }
 
         var pod = await _podService.GetPodAsync(requestPodId);

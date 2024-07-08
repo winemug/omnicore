@@ -16,10 +16,7 @@ public class ApiClient : IApiClient
     public ApiClient(IAppConfiguration appConfiguration)
     {
         _appConfiguration = appConfiguration;
-        _httpClient = new HttpClient
-        {
-            BaseAddress = appConfiguration.ApiAddress
-        };
+        _httpClient = new HttpClient();
     }
     public async Task<TResponse?> PostRequestAsync<TRequest, TResponse>(string route, TRequest request,
         CancellationToken cancellationToken = default) where TResponse : ApiResponse

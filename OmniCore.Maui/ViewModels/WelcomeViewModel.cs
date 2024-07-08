@@ -19,6 +19,7 @@ public class WelcomeViewModel : BaseViewModel
     {
         if (await _platformInfo.VerifyPermissions())
         {
+            _platformService.StartService();
         }
     }
 }

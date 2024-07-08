@@ -2,15 +2,21 @@ namespace OmniCore.Services.Interfaces.Core;
 
 public interface IAppConfiguration
 {
-    string? AccountEmail { get; set; }
-    bool AccountVerified { get; set; }
-    string ClientName { get; set; }
-    Uri ApiAddress { get; }
-    ClientAuthorization? ClientAuthorization { get; set; } 
+    public Task Set(OmniCoreConfiguration configuration);
+    public Task<OmniCoreConfiguration?> Get();
 }
 
-public record ClientAuthorization
-{
-    public Guid ClientId { get; init; }
-    public byte[] Token { get; init; }
+public abstract record OmniCoreConfiguration
+{ 
+    public Guid ClientId { get; } = Guid.Empty;
+    public Guid AccountId { get; } = Guid.Empty;
+    public Guid DefaultProfileId { get; } = Guid.Empty;
+    public string AmqpConnectionString { get; } = "";
+    public string ClientCertificate { get; } = "";
+    public string ClientKey { get; } = "";
+
+    public string UserId { get; } = "";
+    public string RequestExchange { get; } = "";
+    public string SyncExchange { get; } = "";
+    public string ResponseExchange { get; } = "";
 }
