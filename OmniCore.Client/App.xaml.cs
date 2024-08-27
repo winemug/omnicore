@@ -7,13 +7,15 @@ namespace OmniCore.Client;
 public partial class App : Application
 {
     private readonly NavigationService navigationService;
+    private readonly AppStartup appStartup;
 
-    public App(NavigationService navigationService)
+    public App(NavigationService navigationService, AppStartup appStartup)
     {
         InitializeComponent();
 
         MainPage = navigationService.MainPage;
         this.navigationService = navigationService;
+        this.appStartup = appStartup;
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
@@ -31,7 +33,7 @@ public partial class App : Application
 
     private async void WindowOnCreated(object? sender, EventArgs e)
     {
-        await navigationService.PushViewAsync<AuthenticationPage, AuthenticationModel>();
+        await appStartup.StartAsync();
     }
     private async void WindowOnDeactivated(object? sender, EventArgs e)
     {

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="OmniCore.Client.Views.PermissionsPage"
+             Title="PermissionsPage"
+             xmlns:vm="clr-namespace:OmniCore.Client.ViewModels"
+             x:DataType="vm:PermissionsModel">
+    <VerticalStackLayout Margin="8">
+        <Label 
+            Text="Please do permissions thx bye"
+            VerticalOptions="Center" 
+            HorizontalOptions="Center" />
+
+        <Button Text="Bluetooth" Command="{Binding BluetoothCommand}" IsEnabled="{Binding BluetoothPermissionsRequired}" />
+        <Button Text="Notifications" Command="{Binding NotificationsCommand}" IsEnabled="{Binding NotificationPermissionsRequired}"/>
+        <Button Text="Data" Command="{Binding BackgroundDataCommand}" IsEnabled="{Binding BackgroundDataPermissionsRequired}" />
+        <Button Text="Battery" Command="{Binding BatteryExemptionCommand}" IsEnabled="{Binding BatteryExemptionRequired}"/>
+    </VerticalStackLayout>
+</ContentPage>

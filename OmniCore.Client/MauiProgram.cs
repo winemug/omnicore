@@ -26,9 +26,11 @@ public static class MauiProgram
 
         builder.Services
             .AddSingleton<NavigationService>()
+            .AddSingleton<AppStartup>()
+
             .AddTransient<EmptyPage>()
-            .AddTransient<AuthenticationModel>()
-            .AddTransient<AuthenticationPage>()
+            .AddTransient<AuthenticationModel>().AddTransient<AuthenticationPage>()
+            .AddTransient<PermissionsModel>().AddTransient<PermissionsPage>()
 
             .RegisterPlatformServices();
 

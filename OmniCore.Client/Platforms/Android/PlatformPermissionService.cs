@@ -48,7 +48,11 @@ public class PlatformPermissionService : IPlatformPermissionService
     {
         if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
         {
-            Platform.CurrentActivity?.StartActivity(new Intent(Settings.ActionRequestIgnoreBatteryOptimizations, Uri.Parse($"package:{MauiApplication.Current.PackageName}")));
+            Platform.CurrentActivity?.StartActivity(
+                intent: new Intent(action: Settings.ActionRequestIgnoreBatteryOptimizations,
+                           uri: Uri.Parse($"package:{MauiApplication.Current.PackageName}")),
+                options: ActivityOptions.MakeBasic().ToBundle()
+                );
         }
         else
         {
