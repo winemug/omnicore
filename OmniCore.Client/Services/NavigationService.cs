@@ -8,26 +8,43 @@ using System.Threading.Tasks;
 
 namespace OmniCore.Client.Services;
 
-public class NavigationService
+public class NavigationService : IDisposable
 {
-    public NavigationPage MainPage { get; }
-    public INavigation Navigation => this.MainPage.Navigation;
+    public Page MainPage { get; }
+    private INavigation Navigation => ((FlyoutPage)this.MainPage).Detail.Navigation;
 
-    private ViewModel? _activeModel;
     private readonly IServiceProvider _serviceProvider;
+    private AsyncServiceScope _serviceScope;
 
     public NavigationService(IServiceProvider serviceProvider)
     {
-        MainPage = new NavigationPage();
+        var f = new FlyoutPage();
+        var n = new NavigationPage();
+        n.Title = "OmniCore";
+
+        var c = new ContentPage();
+        c.Title = "Home";
+
+        f.Detail = n;
+        f.Flyout = c;
+
+        MainPage = f;
         _serviceProvider = serviceProvider;
-        _activeModel = null;
+        _serviceScope = _serviceProvider.CreateAsyncScope();
+    }
+
+    private void RenewScope()
+    {
+        _serviceScope.Dispose();
+        _serviceScope = _serviceProvider.CreateAsyncScope();
     }
 
     public async ValueTask PushViewAsync<TView>(bool setRoot = false)
     where TView : Page
     {
-        await NavigateAway(_activeModel);
-        var view = _serviceProvider.GetRequiredService<TView>();
+        if (setRoot)
+            RenewScope();
+        var view = _serviceScope.ServiceProvider.GetRequiredService<TView>();
         await NavigateTo(null, view, setRoot) ;
     }
 
@@ -35,9 +52,10 @@ public class NavigationService
         where TView : Page
         where TModel : ViewModel
     {
-        await NavigateAway(_activeModel);
-        var model = _serviceProvider.GetRequiredService<TModel>();
-        var view = _serviceProvider.GetRequiredService<TView>();
+        if (setRoot)
+            RenewScope();
+        var model = _serviceScope.ServiceProvider.GetRequiredService<TModel>();
+        var view = _serviceScope.ServiceProvider.GetRequiredService<TView>();
         await NavigateTo(model, view, setRoot);
     }
 
@@ -46,25 +64,13 @@ public class NavigationService
         where TModel : DataViewModel<TModelData>
         where TModelData : notnull
     {
-        await NavigateAway(_activeModel);
-
-        var model = _serviceProvider.GetRequiredService<TModel>();
-        var view = _serviceProvider.GetRequiredService<TView>();
+        if (setRoot)
+            RenewScope();
+        var model = _serviceScope.ServiceProvider.GetRequiredService<TModel>();
+        var view = _serviceScope.ServiceProvider.GetRequiredService<TView>();
         await model.LoadDataAsync(data);
 
         await NavigateTo(model, view, setRoot);
-    }
-
-    private async ValueTask NavigateAway(ViewModel? model)
-    {
-        if (model != null)
-        {
-            await model.OnNavigatingAway();
-            if (model is IAsyncDisposable asyncDisposable)
-                await asyncDisposable.DisposeAsync();
-            if (model is IDisposable disposable)
-                disposable.Dispose();
-        }
     }
 
     private async ValueTask NavigateTo(ViewModel? model, Page view, bool setRoot)
@@ -74,7 +80,6 @@ public class NavigationService
             await model.BindToView(view);
             await model.OnNavigatingTo();
         }
-        _activeModel = model;
         
         if (setRoot && Navigation.NavigationStack.Count > 0)
         {
@@ -88,15 +93,20 @@ public class NavigationService
     }
     public ValueTask OnWindowActivatedAsync()
     {
-        if (_activeModel != null)
-            return _activeModel.OnResumed();
+        if (Navigation.NavigationStack.Last().BindingContext is ViewModel model)
+            return model.OnResumed();
         return ValueTask.CompletedTask;
     }
 
     public ValueTask OnWindowDeactivatedAsync()
     {
-        if (_activeModel != null)
-            return _activeModel.OnPaused();
+        if (Navigation.NavigationStack.Last().BindingContext is ViewModel model)
+            return model.OnPaused();
         return ValueTask.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _serviceScope.Dispose();
     }
 }

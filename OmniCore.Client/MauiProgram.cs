@@ -28,9 +28,8 @@ public static class MauiProgram
             .AddSingleton<NavigationService>()
             .AddSingleton<AppStartup>()
 
-            .AddTransient<EmptyPage>()
-            .AddTransient<AuthenticationModel>().AddTransient<AuthenticationPage>()
-            .AddTransient<PermissionsModel>().AddTransient<PermissionsPage>()
+            .AddScoped<AuthenticationModel>().AddScoped<AuthenticationPage>()
+            .AddScoped<PermissionsModel>().AddScoped<PermissionsPage>()
 
             .RegisterPlatformServices();
 

@@ -18,7 +18,6 @@ public class AuthenticationModel(NavigationService navigationService) : ViewMode
 
     public async void Login()
     {
-        await navigationService.PushViewAsync<EmptyPage>();
     }
 
 }
