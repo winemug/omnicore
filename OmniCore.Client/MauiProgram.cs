@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using OmniCore.Client.Platforms;
-using OmniCore.Client.Services;
 using OmniCore.Client.ViewModels;
 using OmniCore.Client.Views;
 
@@ -25,11 +24,8 @@ public static class MauiProgram
 #endif
 
         builder.Services
-            .AddSingleton<NavigationService>()
             .AddSingleton<AppStartup>()
-
-            .AddScoped<AuthenticationModel>().AddScoped<AuthenticationPage>()
-            .AddScoped<PermissionsModel>().AddScoped<PermissionsPage>()
+            .AddSingleton<CoreNavigationModel>().AddSingleton<CoreNavigationPage>()
 
             .RegisterPlatformServices();
 

@@ -1,20 +1,18 @@
-﻿using OmniCore.Client.Services;
-using OmniCore.Client.ViewModels;
+﻿using OmniCore.Client.ViewModels;
 using OmniCore.Client.Views;
-
 namespace OmniCore.Client;
 
 public partial class App : Application
 {
-    private readonly NavigationService navigationService;
+    private readonly CoreNavigationModel navigationModel;
     private readonly AppStartup appStartup;
 
-    public App(NavigationService navigationService, AppStartup appStartup)
+    public App(CoreNavigationModel navigationModel, AppStartup appStartup)
     {
         InitializeComponent();
 
-        MainPage = navigationService.MainPage;
-        this.navigationService = navigationService;
+        MainPage = navigationModel.Page;
+        this.navigationModel = navigationModel;
         this.appStartup = appStartup;
     }
 
@@ -37,19 +35,22 @@ public partial class App : Application
     }
     private async void WindowOnDeactivated(object? sender, EventArgs e)
     {
-        await navigationService.OnWindowDeactivatedAsync();
+        await navigationModel.OnWindowDeactivatedAsync();
     }
     private async void WindowOnActivated(object? sender, EventArgs e)
     {
-        await navigationService.OnWindowActivatedAsync();
+        await navigationModel.OnWindowActivatedAsync();
     }
-    private void WindowOnStopped(object? sender, EventArgs e)
+    private async void WindowOnStopped(object? sender, EventArgs e)
     {
+        await appStartup.StopAsync();
     }
-    private void WindowOnResumed(object? sender, EventArgs e)
+    private async void WindowOnResumed(object? sender, EventArgs e)
     {
+        await appStartup.ResumeAsync();
     }
-    private void WindowOnDestroying(object? sender, EventArgs e)
+    private async void WindowOnDestroying(object? sender, EventArgs e)
     {
+        await appStartup.DestroyAsync();
     }
 }
