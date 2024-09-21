@@ -1,5 +1,4 @@
-﻿using CommunityToolkit.Maui;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using OmniCore.Client.Platforms;
 using OmniCore.Client.ViewModels;
 using OmniCore.Client.Views;
@@ -13,7 +12,7 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
-            .UseMauiCommunityToolkit()
+            //.UseMauiCommunityToolkit()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -25,7 +24,9 @@ public static class MauiProgram
 
         builder.Services
             .AddSingleton<AppStartup>()
-            .AddSingleton<CoreNavigationModel>().AddSingleton<CoreNavigationPage>()
+            .AddSingleton<MainModel>().AddSingleton<FlyoutPage>()
+            .AddSingleton<FlyoutContentModel>().AddSingleton<FlyoutContentPage>()
+            .AddSingleton<NavigationModel>().AddSingleton<NavigationPage>()
 
             .RegisterPlatformServices();
 

@@ -3,22 +3,27 @@ using OmniCore.Client.ViewModels;
 using OmniCore.Client.Views;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static OmniCore.Client.ViewModels.FlyoutContentModel;
 
 namespace OmniCore.Client;
 
-public class AppStartup(CoreNavigationModel navigationModel,
+public class AppStartup(
+    FlyoutContentModel flyoutContentModel,
+    NavigationModel navigationModel,
     IPlatformPermissionService platformPermissionService)
 {
     public ValueTask StartAsync()
     {
-        navigationModel.FlyoutItems.Add(new FlyoutItemModel
-        {
-            Title = "Home",
-            Icon = "home",
-        });
+        flyoutContentModel.FlyoutItems.Add(
+            new FlyoutItemModel { Title = "Home", Icon = "home" });
+        flyoutContentModel.FlyoutItems.Add(
+            new FlyoutItemModel { Title = "Home2", Icon = "home" });
+        flyoutContentModel.FlyoutItems.Add(
+            new FlyoutItemModel { Title = "Home3", Icon = "home" });
         return ValueTask.CompletedTask;
     }
 

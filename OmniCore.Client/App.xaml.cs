@@ -4,14 +4,18 @@ namespace OmniCore.Client;
 
 public partial class App : Application
 {
-    private readonly CoreNavigationModel navigationModel;
+    private readonly MainModel mainModel;
     private readonly AppStartup appStartup;
+    private readonly NavigationModel navigationModel;
 
-    public App(CoreNavigationModel navigationModel, AppStartup appStartup)
+    public App(
+        MainModel mainModel,
+        NavigationModel navigationModel,
+        AppStartup appStartup)
     {
         InitializeComponent();
 
-        MainPage = navigationModel.Page;
+        MainPage = mainModel.Page;
         this.navigationModel = navigationModel;
         this.appStartup = appStartup;
     }
