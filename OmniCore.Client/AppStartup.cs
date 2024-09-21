@@ -16,7 +16,7 @@ public class AppStartup(
     NavigationModel navigationModel,
     IPlatformPermissionService platformPermissionService)
 {
-    public ValueTask StartAsync()
+    public async ValueTask StartAsync()
     {
         flyoutContentModel.FlyoutItems.Add(
             new FlyoutItemModel { Title = "Home", Icon = "home" });
@@ -24,7 +24,8 @@ public class AppStartup(
             new FlyoutItemModel { Title = "Home2", Icon = "home" });
         flyoutContentModel.FlyoutItems.Add(
             new FlyoutItemModel { Title = "Home3", Icon = "home" });
-        return ValueTask.CompletedTask;
+
+        await navigationModel.NavigateTo<RegisterClientModel>(true);
     }
 
     public ValueTask ResumeAsync()

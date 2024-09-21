@@ -12,7 +12,6 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
-            //.UseMauiCommunityToolkit()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -27,6 +26,10 @@ public static class MauiProgram
             .AddSingleton<MainModel>().AddSingleton<FlyoutPage>()
             .AddSingleton<FlyoutContentModel>().AddSingleton<FlyoutContentPage>()
             .AddSingleton<NavigationModel>().AddSingleton<NavigationPage>()
+
+            .AddScoped<RegisterClientModel>().AddScoped<RegisterClientPage>()
+            .AddScoped<CreateAccountModel>().AddScoped<CreateAccountPage>()
+            .AddScoped<HomeModel>().AddScoped<HomePage>()
 
             .RegisterPlatformServices();
 

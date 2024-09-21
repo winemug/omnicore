@@ -8,12 +8,24 @@ using System.Threading.Tasks;
 
 namespace OmniCore.Client.ViewModels;
 
-public class ViewModel : INotifyPropertyChanged
+public class ViewModel : INotifyPropertyChanged, IDisposable
 {
     public ViewModel(Page page)
     {
         page.BindingContext = this;
+        page.Appearing += Page_Appearing;
+        page.Disappearing += Page_Disappearing;
         this.Page = page;
+    }
+
+    private async void Page_Disappearing(object? sender, EventArgs e)
+    {
+        await OnDisappear();
+    }
+
+    private async void Page_Appearing(object? sender, EventArgs e)
+    {
+        await OnAppear();
     }
 
     public Page Page { get; protected set; }
@@ -26,10 +38,13 @@ public class ViewModel : INotifyPropertyChanged
         this.PropertyChanged.Invoke(this, new PropertyChangedEventArgs(""));
     }
 
-    public virtual ValueTask OnResumed() => ValueTask.CompletedTask;
-    public virtual ValueTask OnPaused() => ValueTask.CompletedTask;
-    public virtual ValueTask OnNavigatingTo() => ValueTask.CompletedTask;
-    public virtual ValueTask OnNavigatingAway() => ValueTask.CompletedTask;
+    public virtual ValueTask OnAppear() => ValueTask.CompletedTask;
+    public virtual ValueTask OnDisappear() => ValueTask.CompletedTask;
+    public virtual void Dispose()
+    {
+        this.Page.Appearing -= Page_Appearing;
+        this.Page.Disappearing -= Page_Disappearing;
+    }
 }
 
 public abstract class ViewModel<T> : ViewModel

@@ -23,15 +23,13 @@ public class NavigationModel : ViewModel, IDisposable
         : base(page)
     {
         page.Title = "Main Navigation";
+        page.NavigatedTo += async (s, e) => await OnWindowActivatedAsync();
+        page.NavigatedFrom += async (s, e) => await OnWindowDeactivatedAsync();
         this.flyoutContentModel = flyoutContentModel;
         this.serviceProvider = serviceProvider;
         this.serviceScope = serviceProvider.CreateAsyncScope();
 
         FlyoutPage = flyoutContentModel.Page;
-    }
-
-    public async ValueTask Start<TViewModel>() where TViewModel : ViewModel
-    {
     }
 
     public async ValueTask NavigateTo<TViewModel>(bool popToRoot) where TViewModel : ViewModel
@@ -55,18 +53,33 @@ public class NavigationModel : ViewModel, IDisposable
         }
     }
 
+    private ViewModel? GetActiveViewModel()
+    {
+        if (Page.Navigation.NavigationStack.Count == 0)
+            return null;
+        return Page.Navigation.NavigationStack.Last().BindingContext as ViewModel;
+    }
     public ValueTask OnWindowDeactivatedAsync()
     {
-        return ValueTask.CompletedTask;
+        var model = GetActiveViewModel();
+        if (model == null)
+            return ValueTask.CompletedTask;
+
+        return model.OnDisappear();
     }
 
     public ValueTask OnWindowActivatedAsync()
     {
-        return ValueTask.CompletedTask;
+        var model = GetActiveViewModel();
+        if (model == null)
+            return ValueTask.CompletedTask;
+
+        return model.OnAppear();
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
         serviceScope.Dispose();
+        base.Dispose();
     }
 }
