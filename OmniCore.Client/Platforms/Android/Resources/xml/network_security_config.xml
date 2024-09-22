@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+  <debug-overrides>
+    <base-config cleartextTrafficPermitted="true"/>
+  </debug-overrides>
+</network-security-config>
