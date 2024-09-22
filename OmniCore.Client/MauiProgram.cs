@@ -2,6 +2,8 @@
 using OmniCore.Client.Platforms;
 using OmniCore.Client.ViewModels;
 using OmniCore.Client.Views;
+using Microsoft.Extensions.DependencyInjection;
+using OmniCore.Client.Services;
 
 namespace OmniCore.Client;
 
@@ -23,9 +25,13 @@ public static class MauiProgram
 
         builder.Services
             .AddSingleton<AppStartup>()
+
             .AddSingleton<MainModel>().AddSingleton<FlyoutPage>()
             .AddSingleton<FlyoutContentModel>().AddSingleton<FlyoutContentPage>()
             .AddSingleton<NavigationModel>().AddSingleton<NavigationPage>()
+
+            .AddScoped<AuthenticationService>()
+
 
             .AddScoped<RegisterClientModel>().AddScoped<RegisterClientPage>()
             .AddScoped<CreateAccountModel>().AddScoped<CreateAccountPage>()

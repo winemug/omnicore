@@ -13,6 +13,7 @@ public static partial class ServiceCollectionExtensions
     {
         return serviceCollection
             .AddSingleton<IPlatformForegroundService, PlatformForegroundService>()
-            .AddSingleton<IPlatformPermissionService, PlatformPermissionService>();
+            .AddSingleton<IPlatformPermissionService, PlatformPermissionService>()
+            .AddSingleton<IPlatformInfoService, PlatformInfoService>();
     }
 }

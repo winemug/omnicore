@@ -1,4 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Input;
+using OmniCore.Client.Abstractions.Services;
+using OmniCore.Client.Services;
 using OmniCore.Client.Views;
 using System;
 using System.Collections.Generic;
@@ -11,6 +13,8 @@ namespace OmniCore.Client.ViewModels;
 
 public class RegisterClientModel : ViewModel
 {
+    private readonly IPlatformInfoService platformInfoService;
+    private readonly AuthenticationService authenticationService;
     private readonly NavigationModel navigationModel;
 
     public string Email { get; set; } = "";
@@ -20,8 +24,14 @@ public class RegisterClientModel : ViewModel
     public ICommand CreateAccountCommand => new RelayCommand(CreateAccountClicked);
     public ICommand RegisterClientCommand => new RelayCommand(RegisterClientClicked);
 
-    public RegisterClientModel(NavigationModel navigationModel, RegisterClientPage page) : base(page)
+    public RegisterClientModel(
+        IPlatformInfoService platformInfoService,
+        AuthenticationService authenticationService,
+        NavigationModel navigationModel,
+        RegisterClientPage page) : base(page)
     {
+        this.platformInfoService = platformInfoService;
+        this.authenticationService = authenticationService;
         this.navigationModel = navigationModel;
     }
     private async void CreateAccountClicked()
@@ -33,6 +43,9 @@ public class RegisterClientModel : ViewModel
     private async void RegisterClientClicked()
     {
         EntryEnabled = false;
+        OnPropertyChanged();
+        await authenticationService.RegisterClient(Email, Password, platformInfoService.GetClientIdentifier());
+        EntryEnabled = true;
         OnPropertyChanged();
     }
 
