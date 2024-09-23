@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using OmniCore.Common.Amqp;
+using OmniCore.Common.Data;
 using OmniCore.Services.Interfaces.Amqp;
 using OmniCore.Services.Interfaces.Core;
 using OmniCore.Services.Interfaces.Pod;
@@ -13,15 +15,18 @@ public class RaddService : IRaddService
     private IPodService _podService;
     private IAmqpService _amqpService;
     private IRadioService _radioService;
-    
+    private readonly ISyncService _syncService;
+
     public RaddService(
         IPodService podService,
         IAmqpService amqpService,
-        IRadioService radioService)
+        IRadioService radioService,
+        ISyncService syncService)
     {
         _podService = podService;
         _amqpService = amqpService;
         _radioService = radioService;
+        _syncService = syncService;
     }
 
     public async Task Start()
@@ -85,6 +90,20 @@ public class RaddService : IRaddService
         if (rr.create)
         {
             requestPodId = await _podService.NewPodAsync(rr.create_units.Value, (MedicationType)rr.create_medication.Value, rr.create_radio_address);
+        }
+        else if (rr.resync)
+        {
+            await using var context = new OcdbContext();
+            await context.Pods
+                .Where(p => p.PodId == requestPodId)
+                .ExecuteUpdateAsync(calls => calls.SetProperty(p => p.IsSynced, false));
+
+            await context.PodActions
+                .Where(pa => pa.PodId == requestPodId)
+                .ExecuteUpdateAsync(calls => calls.SetProperty(pa => pa.IsSynced, false));
+            await context.SaveChangesAsync();
+            
+            _syncService.TriggerSync();
         }
 
         var pod = await _podService.GetPodAsync(requestPodId);
@@ -199,6 +218,8 @@ public class RaddRequest
     // public int? valid_to { get; set; }
     public string? request_id { get; set; }
     public string? pod_id { get; set; }
+    
+    public bool resync { get; set; }
     public int? next_record_index { get; set; }
     public bool beep { get; set; }
     public bool update_status { get; set; }

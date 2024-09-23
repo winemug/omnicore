@@ -237,10 +237,10 @@ public class AmqpService : IAmqpService
             configuration.UserId, connection, AmqpDestination.Request, cancellationToken);
 
         using var subChannel2 = await CreateSubscription($"q_rsp_{configuration.UserId}", configuration.ResponseExchange,
-            configuration.UserId, connection, AmqpDestination.Request, cancellationToken);
+            configuration.UserId, connection, AmqpDestination.Response, cancellationToken);
 
         using var subChannel3 = await CreateSubscription($"q_sync_{configuration.UserId}", configuration.SyncExchange,
-            configuration.UserId, connection, AmqpDestination.Request, cancellationToken);
+            configuration.UserId, connection, AmqpDestination.Sync, cancellationToken);
         
         using var pubChannel = connection.CreateModel();
         pubChannel.ConfirmSelect();
