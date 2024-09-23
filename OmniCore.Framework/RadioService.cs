@@ -39,7 +39,7 @@ public class RadioService : IRadioService
         Debug.WriteLine("starting radios");
         _radios = new List<Radio>
         {
-            new(Guid.Parse("00000000-0000-0000-0000-bc33acb95371"), "ema")
+            new(Guid.Parse("00000000-0000-0000-0000-bc33acb95371"), "ema"),
             //new Radio(Guid.Parse("00000000-0000-0000-0000-886b0ff897cf"), "mod"),
             //new Radio(Guid.Parse("00000000-0000-0000-0000-c2c42b149fe4"), "ora"),
         };

@@ -16,12 +16,8 @@ using Org.Apache.Http.Client.Params;
 namespace OmniCore.Maui.ViewModels;
 public class TestViewModel : BaseViewModel
 {
-    public string Email { get; set; }
-    public string Password { get; set; }
-    public string ClientName { get; set; }
-    public ICommand NewPodCommand { get; set; }
-    public ICommand PrimeCommand { get; set; }
-    public ICommand StartCommand { get; set; }
+    public string StatusText { get; set; }
+
     public ICommand StopCommand { get; set; }
 
     private IPlatformService _platformService;
@@ -55,11 +51,34 @@ public class TestViewModel : BaseViewModel
         // StartCommand = new Command(async () => await ExecuteStartPod());
     }
 
+    private bool appearOnce = false;
     public override async ValueTask OnAppearing()
     {
+        if (appearOnce)
+            return;
+        appearOnce = true;
+        await _platformInfo.VerifyPermissions();
+
         using var context = new OcdbContext();
         await context.Database.EnsureCreatedAsync();
+        await _appConfiguration.Set(new OmniCoreConfiguration
+        {
+            AmqpConnectionString = "amqps://amqp.balya.net/ocv",
+            AccountId = new Guid("269d7830-fe9b-4641-8123-931846e45c9c"),
+            ClientId = new Guid("ee843c96-a312-4d4b-b0cc-93e22d6e680e"),
+            DefaultProfileId = new Guid("7d799596-3f6d-48e2-ac65-33ca6396788b"),
+            UserId = "occ",
+            RequestExchange = "e_requests",
+            ResponseExchange = "e_responses",
+            SyncExchange = "e_sync",
+            ClientCertificate = "",
+            ClientKey = ""
+
+        });
         _platformService.StartService();
+        // await _radioService.Start();
+        // await _podService.Start();
+        // await _amqpService.Start();
     }
  
     private async Task ExecuteStop()

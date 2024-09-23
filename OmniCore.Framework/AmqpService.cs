@@ -130,6 +130,7 @@ public class AmqpService : IAmqpService
             Uri = new Uri(amqpConnectionString),
             RequestedHeartbeat = TimeSpan.FromSeconds(30),
             AutomaticRecoveryEnabled = false,
+            DispatchConsumersAsync = true,
             AuthMechanisms = new IAuthMechanismFactory[] { new ExternalMechanismFactory() },
         };
 
@@ -141,7 +142,7 @@ public class AmqpService : IAmqpService
             .Handle<Exception>()
             .WaitAndRetryForever(
                 sleepDurationProvider: retries => { return TimeSpan.FromSeconds(Math.Min(retries * 3, 60)); },
-                onRetry: (ex, ts) => { Trace.WriteLine($"Error {ex}, waiting {ts} to reconnect"); })
+                onRetry: (ex, ts) => { Trace.WriteLine($"Error {ex.Exception}, waiting {ts} to reconnect"); })
             .Execute((_) => connectionFactory.CreateConnection(), cancellationToken);
     }
 

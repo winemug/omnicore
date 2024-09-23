@@ -113,7 +113,7 @@ public class Radio : IRadio
 
         return await policy.ExecuteAsync(ct => CrossBluetoothLE.Current.Adapter
             .ConnectToKnownDeviceAsync(Id,
-                new ConnectParameters(false, true),
+                new ConnectParameters(false, false),
                 ct), cancellationToken);
     }
 
@@ -132,8 +132,11 @@ public class Radio : IRadio
                     var timeoutToken = ctt.Token;
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutToken);
                     Debug.WriteLine($"{Name} connecting");
+
+                    //device = await adapter.DiscoverDeviceAsync(Id, cts.Token);
+                   
                     device = await adapter.ConnectToKnownDeviceAsync(Id,
-                        new ConnectParameters(false, true),
+                        new ConnectParameters(false, false),
                         cts.Token);
                     Debug.WriteLine($"{Name} connected");
                     return device;

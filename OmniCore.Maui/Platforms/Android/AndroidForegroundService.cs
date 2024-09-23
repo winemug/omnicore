@@ -1,13 +1,13 @@
 using Android.App;
 using Android.Content;
+using Android.Content.PM;
 using Android.OS;
 using OmniCore.Services.Interfaces.Core;
 using static Android.App.Notification;
 
 namespace OmniCore.Maui
 {
-    [Service(ForegroundServiceType = global::Android.Content.PM.ForegroundService.TypeDataSync |
-                                     global::Android.Content.PM.ForegroundService.TypeConnectedDevice)]
+    [Service(ForegroundServiceType = global::Android.Content.PM.ForegroundService.TypeSystemExempted)]
     public class AndroidForegroundService : Service
     {
         private bool _isStarted;
@@ -69,7 +69,7 @@ namespace OmniCore.Maui
                 .Build();
 
             // Enlist this instance of the service as a foreground service
-            StartForeground(100, notification);
+            StartForeground(100, notification, ForegroundService.TypeSystemExempted);
         }
 
         public override StartCommandResult OnStartCommand(Intent intent, StartCommandFlags flags, int startId)

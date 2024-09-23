@@ -77,6 +77,8 @@ namespace OmniCore.Maui.Services
                 {
                     (global::Android.Manifest.Permission.Bluetooth, false),
                     (global::Android.Manifest.Permission.BluetoothAdmin, false),
+                    (global::Android.Manifest.Permission.BluetoothScan, false),
+                    (global::Android.Manifest.Permission.BluetoothConnect, false),
                     (global::Android.Manifest.Permission.AccessBackgroundLocation, true),
                     (global::Android.Manifest.Permission.AccessFineLocation, true),
                 }.ToArray()
@@ -93,6 +95,7 @@ namespace OmniCore.Maui.Services
             new List<(string androidPermission, bool isRuntime)>
             {
                 (global::Android.Manifest.Permission.ForegroundService, true),
+                (global::Android.Manifest.Permission.ForegroundServiceSystemExempted, true),
             }.ToArray();
     }
     

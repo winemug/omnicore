@@ -6,17 +6,17 @@ public interface IAppConfiguration
     public Task<OmniCoreConfiguration?> Get();
 }
 
-public abstract record OmniCoreConfiguration
+public record OmniCoreConfiguration
 { 
-    public Guid ClientId { get; } = Guid.Empty;
-    public Guid AccountId { get; } = Guid.Empty;
-    public Guid DefaultProfileId { get; } = Guid.Empty;
-    public string AmqpConnectionString { get; } = "";
-    public string ClientCertificate { get; } = "";
-    public string ClientKey { get; } = "";
+    public Guid ClientId { get; set; } = Guid.Empty;
+    public Guid AccountId { get; set;} = Guid.Empty;
+    public Guid DefaultProfileId { get; set;} = Guid.Empty;
+    public string AmqpConnectionString { get; set;} = "";
+    public string ClientCertificate { get; set;} = "";
+    public string ClientKey { get; set;} = "";
 
-    public string UserId { get; } = "";
-    public string RequestExchange { get; } = "";
-    public string SyncExchange { get; } = "";
-    public string ResponseExchange { get; } = "";
+    public string UserId { get; set;} = "";
+    public string RequestExchange { get; set;} = "";
+    public string SyncExchange { get; set;} = "";
+    public string ResponseExchange { get; set;} = "";
 }
