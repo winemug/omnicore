@@ -132,7 +132,7 @@ public class SyncService : ISyncService
         {
             PodId = mpa.PodId,
             Index = mpa.Index,
-            ClientId = mpa.ClientId.Value,
+            ClientId = mpa.ClientId,
             RequestSentEarliest = mpa.RequestSentEarliest,
             RequestSentLatest = mpa.RequestSentLatest,
             Result = (Shared.Enums.AcceptanceType)mpa.Result,
@@ -170,7 +170,6 @@ public class SyncService : ISyncService
             await using var context = new OcdbContext();
             var podsToSync = await context.Pods.Where(p => !p.IsSynced).ToListAsync();
             var podActionsToSync = await context.PodActions.Where(pa => !pa.IsSynced).ToListAsync();
-            await context.DisposeAsync();
             Debug.WriteLine($"{podsToSync.Count} Pods and {podActionsToSync.Count} Actions will be synced");
             foreach (var pod in podsToSync)
             {
@@ -254,7 +253,7 @@ public class PodSync
 public class PodActionSync
 {
     public Guid PodId { get; set; }
-    public Guid? ClientId { get; set; }
+    public Guid ClientId { get; set; }
     public int Index { get; set; }
     public DateTimeOffset? RequestSentEarliest { get; set; }
     public byte[]? SentData { get; set; }

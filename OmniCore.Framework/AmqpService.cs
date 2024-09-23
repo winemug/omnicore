@@ -186,6 +186,8 @@ public class AmqpService : IAmqpService
                 {
                 }
             
+                await Task.Yield();
+                
                 if (publishMessage != null)
                 {
                     confirmList.Add(publishMessage);
@@ -236,8 +238,8 @@ public class AmqpService : IAmqpService
         using var subChannel1 = await CreateSubscription($"q_req_{configuration.UserId}", configuration.RequestExchange,
             configuration.UserId, connection, AmqpDestination.Request, cancellationToken);
 
-        using var subChannel2 = await CreateSubscription($"q_rsp_{configuration.UserId}", configuration.ResponseExchange,
-            configuration.UserId, connection, AmqpDestination.Response, cancellationToken);
+        // using var subChannel2 = await CreateSubscription($"q_rsp_{configuration.UserId}", configuration.ResponseExchange,
+        //     configuration.UserId, connection, AmqpDestination.Response, cancellationToken);
 
         using var subChannel3 = await CreateSubscription($"q_sync_{configuration.UserId}", configuration.SyncExchange,
             configuration.UserId, connection, AmqpDestination.Sync, cancellationToken);
@@ -262,12 +264,17 @@ public class AmqpService : IAmqpService
             if (success)
                 subChannel.BasicAck(ea.DeliveryTag, false);
             else
+            {
                 subChannel.BasicNack(ea.DeliveryTag, false, true);
+                await Task.Delay(50);
+            }
+            await Task.Yield();
         }
         catch (Exception e)
         {
             subChannel.BasicNack(ea.DeliveryTag, false, true);
             Trace.WriteLine($"Message processing failed: {e}");
+            await Task.Delay(50);
         }
 
         await Task.Yield();
@@ -285,8 +292,8 @@ public class AmqpService : IAmqpService
                         return await callbackRequests(message);
                     return false;
                 case AmqpDestination.Response:
-                    if (callbackResponses != null)
-                        return await callbackResponses(message);
+                    // if (callbackResponses != null)
+                    //     return await callbackResponses(message);
                     return false;
                 case AmqpDestination.Sync:
                     if (callbackSync != null)
@@ -305,7 +312,7 @@ public class AmqpService : IAmqpService
 
 
     private Func<AmqpMessage, Task<bool>> callbackRequests;
-    private Func<AmqpMessage, Task<bool>> callbackResponses;
+    // private Func<AmqpMessage, Task<bool>> callbackResponses;
     private Func<AmqpMessage, Task<bool>> callbackSync;
 
     public void RegisterMessageProcessorCallback(AmqpDestination destination, Func<AmqpMessage, Task<bool>> callback)
@@ -316,7 +323,7 @@ public class AmqpService : IAmqpService
                 callbackRequests = callback;
                 break;
             case AmqpDestination.Response:
-                callbackResponses = callback;
+                // callbackResponses = callback;
                 break;
             case AmqpDestination.Sync:
                 callbackSync = callback;

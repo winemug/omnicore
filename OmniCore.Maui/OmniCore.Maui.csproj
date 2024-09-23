@@ -22,6 +22,12 @@
         <ApplicationVersion>1</ApplicationVersion>
 
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">30.0</SupportedOSPlatformVersion>
+
+        <Version>1.0.2</Version>
+
+        <AssemblyVersion>1.0.2</AssemblyVersion>
+
+        <FileVersion>1.0.2</FileVersion>
     </PropertyGroup>
 
     <PropertyGroup>
