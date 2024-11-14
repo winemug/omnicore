@@ -147,11 +147,6 @@ public class Radio : IRadio
                     await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
                 }
             }
-            catch (TaskCanceledException)
-            {
-                device?.Dispose();
-                throw;
-            }
             catch (Exception e)
             {
                 device?.Dispose();
