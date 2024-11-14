@@ -180,7 +180,7 @@ public class PodService : IPodService
         return pod.PodId;
     }
 
-    public async Task ImportPodAsync(
+    public async Task<Guid> ImportPodAsync(
         uint radioAddress, int unitsPerMilliliter,
         MedicationType medicationType,
         uint lot,
@@ -193,10 +193,11 @@ public class PodService : IPodService
             throw new ApplicationException("Client not registered");
         
         using var ocdb = new OcdbContext();
-        if (ocdb.Pods.Where(p => p.Lot == lot && p.Serial == serial).Any())
-            return;
+        var pod = await ocdb.Pods.Where(p => p.Lot == lot && p.Serial == serial).FirstOrDefaultAsync(); 
+        if (pod != null)
+            return pod.PodId;
 
-        var pod = new Pod
+        pod = new Pod
         {
             PodId = Guid.NewGuid(),
             ClientId = configuration.ClientId,
@@ -211,8 +212,10 @@ public class PodService : IPodService
         await ocdb.SaveChangesAsync();
         _syncService.TriggerSync();
         var pm = new PodModel(pod);
+        await pm.LoadAsync();
         _podLocks.TryAdd(pod.PodId, new AsyncLock());
         _podModels.Add(pm);
+        return pod.PodId;
     }
     
     public async Task<IPodModel?> GetPodAsync(Guid podId)

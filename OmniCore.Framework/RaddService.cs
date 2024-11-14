@@ -49,6 +49,43 @@ public class RaddService : IRaddService
         if (rr == null)
             return false;
 
+        if (rr.listen)
+        {
+            using var radioConnection = await _radioService.GetIdealConnectionAsync();
+            if (radioConnection == null)
+                throw new ApplicationException("No radios available");
+            var ber = await radioConnection.TryGetPacket(0, rr.listen_timeout.Value);
+            var receivedPacket = PodPacket.FromExchangeResult(ber);
+            if (receivedPacket != null)
+            {
+                var response = new AmqpMessage(AmqpDestination.Response, userId)
+                {
+                    Text = JsonSerializer.Serialize(
+                        new
+                        {
+                            request_id = rr.request_id,
+                            success = true,
+                            address = receivedPacket.Address
+                        })
+                };
+                await _amqpService.PublishMessage(response);
+            }
+            else
+            {
+                var response = new AmqpMessage(AmqpDestination.Response, userId)
+                {
+                    Text = JsonSerializer.Serialize(
+                        new
+                        {
+                            request_id = rr.request_id,
+                            success = false
+                        })
+                };
+                await _amqpService.PublishMessage(response);
+            }
+            return true;
+        }
+
         if (string.IsNullOrEmpty(rr.pod_id) && !rr.create)
         {
             await _podService.Refresh();
@@ -87,9 +124,15 @@ public class RaddService : IRaddService
         if (rr.pod_id != null)
             requestPodId = Guid.Parse(rr.pod_id);
 
-        if (rr.create)
+        if (rr.create && rr.create_medication.HasValue && rr.create_units.HasValue)
         {
-            requestPodId = await _podService.NewPodAsync(rr.create_units.Value, (MedicationType)rr.create_medication.Value, rr.create_radio_address);
+            if (rr.create_lot.HasValue && rr.create_serial.HasValue && rr.create_radio_address.HasValue)
+                requestPodId = await _podService.ImportPodAsync( rr.create_radio_address.Value,
+                    rr.create_units.Value,
+                    (MedicationType)rr.create_medication.Value,
+                    rr.create_lot.Value, rr.create_serial.Value);
+            else
+                requestPodId = await _podService.NewPodAsync(rr.create_units.Value, (MedicationType)rr.create_medication.Value, rr.create_radio_address);
         }
         else if (rr.resync)
         {
@@ -108,7 +151,7 @@ public class RaddService : IRaddService
 
         var pod = await _podService.GetPodAsync(requestPodId);
         var success = pod != null;
-        if (!success) return false;
+        if (!success) return true;
 
         using (var podConnection = await _podService.GetConnectionAsync(pod))
         {
@@ -219,6 +262,8 @@ public class RaddRequest
     public string? request_id { get; set; }
     public string? pod_id { get; set; }
     
+    public bool listen { get; set; }
+    public uint? listen_timeout { get; set; }
     public bool resync { get; set; }
     public int? next_record_index { get; set; }
     public bool beep { get; set; }
@@ -235,6 +280,9 @@ public class RaddRequest
     public int? create_units { get; set; }
     public int? create_medication { get; set; }
     public uint? create_radio_address { get; set; }
+    
+    public uint? create_lot { get; set; }
+    public uint? create_serial { get; set; }
     public bool prime { get; set; }
     public bool start { get; set; }
     public int start_basal_ticks_per_hour { get; set; }
