@@ -50,14 +50,6 @@ public class AuthenticationService : IDisposable
 
     public async Task RegisterClient(string email, string password, string clientName)
     {
-        //await httpClient.PostAsJsonAsync("account/create", new
-        //{
-        //    Email="barisk@gmail.com",
-        //    Password="hedenek562217"
-        //});
-        email = "barisk@gmail.com";
-        password = "hedenek562217";
-
         var clientId = Guid.NewGuid();
         var clientIdStr = await SecureStorage.GetAsync("clientId");
         if (clientIdStr != null)
