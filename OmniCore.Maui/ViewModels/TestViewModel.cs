@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Windows.Input;
+using OmniCore.Common;
 using OmniCore.Common.Api;
 using OmniCore.Common.Data;
 using OmniCore.Framework.Omnipod.Requests;
@@ -71,8 +72,8 @@ public class TestViewModel : BaseViewModel
             RequestExchange = "e_requests",
             ResponseExchange = "e_responses",
             SyncExchange = "e_sync",
-            ClientCertificate = "",
-            ClientKey = ""
+            ClientCertificate = Secrets.PublicKey,
+            ClientKey = Secrets.PrivateKey
 
         });
         _platformService.StartService();

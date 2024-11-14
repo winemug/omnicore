@@ -23,11 +23,11 @@
 
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">30.0</SupportedOSPlatformVersion>
 
-        <Version>1.0.3</Version>
+        <Version>1.0.5</Version>
 
-        <AssemblyVersion>1.0.3</AssemblyVersion>
+        <AssemblyVersion>1.0.5</AssemblyVersion>
 
-        <FileVersion>1.0.3</FileVersion>
+        <FileVersion>1.0.5</FileVersion>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -72,15 +72,15 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.6">
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.6" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
-        <PackageReference Include="Polly" Version="8.4.1" />
-        <PackageReference Update="Microsoft.Maui.Controls" Version="8.0.61" />
-        <PackageReference Update="Microsoft.Maui.Controls.Compatibility" Version="8.0.61" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
+        <PackageReference Include="Polly" Version="8.5.0" />
+        <PackageReference Include="Microsoft.Maui.Controls" Version="8.0.93" />
+        <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.93" />
     </ItemGroup>
 
     <ItemGroup>

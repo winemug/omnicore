@@ -263,3 +263,4 @@ __pycache__/
 *.pyc
 /offline
 /.vscode
+OmniCore.Common/Secrets.cs
