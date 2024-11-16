@@ -28,6 +28,9 @@
         <AssemblyVersion>1.0.5</AssemblyVersion>
 
         <FileVersion>1.0.5</FileVersion>
+
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <RuntimeIdentifiers>android-arm;android-arm64;android-x86;android-x64</RuntimeIdentifiers>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -93,5 +96,11 @@
         <SubType>Designer</SubType>
         <Generator>MSBuild:UpdateGeneratedFiles</Generator>
       </AndroidResource>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
     </ItemGroup>
 </Project>
