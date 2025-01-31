@@ -40,7 +40,8 @@ public class RadioService : IRadioService
         Debug.WriteLine("starting radios");
         _radios = new List<Radio>
         {
-            new(Secrets.RadioGuid, "myradio"),
+            // TODO:
+            new(new Guid(), "myradio"),
         };
 
         foreach(var radio in _radios)

@@ -62,21 +62,22 @@ public class TestViewModel : BaseViewModel
 
         using var context = new OcdbContext();
         await context.Database.EnsureCreatedAsync();
-        await _appConfiguration.Set(new OmniCoreConfiguration
-        {
-            AmqpConnectionString = "amqps://amqp.balya.net/ocv",
-            AccountId = new Guid("269d7830-fe9b-4641-8123-931846e45c9c"),
-            ClientId = new Guid("ee843c96-a312-4d4b-b0cc-93e22d6e680e"),
-            DefaultProfileId = new Guid("7d799596-3f6d-48e2-ac65-33ca6396788b"),
-            UserId = "occ",
-            RequestExchange = "e_requests",
-            ResponseExchange = "e_responses",
-            SyncExchange = "e_sync",
-            ClientCertificate = Secrets.PublicKey,
-            ClientKey = Secrets.PrivateKey
-
-        });
-        _platformService.StartService();
+        // await _appConfiguration.Set(new OmniCoreConfiguration
+        // {
+        //     AmqpConnectionString = "amqps://amqp.balya.net/ocv",
+        //     AccountId = new Guid("269d7830-fe9b-4641-8123-931846e45c9c"),
+        //     ClientId = new Guid("ee843c96-a312-4d4b-b0cc-93e22d6e680e"),
+        //     DefaultProfileId = new Guid("7d799596-3f6d-48e2-ac65-33ca6396788b"),
+        //     UserId = "occ",
+        //     RequestExchange = "e_requests",
+        //     ResponseExchange = "e_responses",
+        //     SyncExchange = "e_sync",
+        //     //TODO:
+        //     ClientCertificate = Secrets.PublicKey,
+        //     ClientKey = Secrets.PrivateKey
+        //
+        // });
+        // _platformService.StartService();
         // await _radioService.Start();
         // await _podService.Start();
         // await _amqpService.Start();
