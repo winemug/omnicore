@@ -3,12 +3,25 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:OmniCore.Maui.Models"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="OmniCore.Maui.Pages.WelcomePage"
              x:DataType="models:WelcomeModel"
              Title="Welcome Home">
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior
+            EventName="NavigatedTo"
+            Command="{Binding NavigatedToCommand}" />
+        <toolkit:EventToCommandBehavior
+            EventName="NavigatedFrom"
+            Command="{Binding NavigatedFromCommand}" />
+        <toolkit:EventToCommandBehavior
+            EventName="Appearing"                
+            Command="{Binding AppearingCommand}" />
+    </ContentPage.Behaviors>
     <ContentPage.Content>
         <VerticalStackLayout>
             <Label Text="This here"/>
+            <Button Text="Kommandore" Command="{Binding KommandoCommand}"/>
         </VerticalStackLayout>
     </ContentPage.Content>
 </ContentPage>
