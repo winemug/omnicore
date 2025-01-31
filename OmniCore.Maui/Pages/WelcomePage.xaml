@@ -7,21 +7,8 @@
              x:Class="OmniCore.Maui.Pages.WelcomePage"
              x:DataType="models:WelcomeModel"
              Title="Welcome Home">
-    <ContentPage.Behaviors>
-        <toolkit:EventToCommandBehavior
-            EventName="NavigatedTo"
-            Command="{Binding NavigatedToCommand}" />
-        <toolkit:EventToCommandBehavior
-            EventName="NavigatedFrom"
-            Command="{Binding NavigatedFromCommand}" />
-        <toolkit:EventToCommandBehavior
-            EventName="Appearing"                
-            Command="{Binding AppearingCommand}" />
-    </ContentPage.Behaviors>
-    <ContentPage.Content>
-        <VerticalStackLayout>
-            <Label Text="This here"/>
-            <Button Text="Kommandore" Command="{Binding KommandoCommand}"/>
-        </VerticalStackLayout>
-    </ContentPage.Content>
+    <VerticalStackLayout>
+        <Label Text="This here"/>
+        <Button Text="Kommandore" Command="{Binding KommandoCommand}"/>
+    </VerticalStackLayout>
 </ContentPage>

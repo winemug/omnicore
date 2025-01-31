@@ -31,6 +31,7 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddSingleton<WelcomeModel>();
+        builder.Services.AddSingleton<PermissionsModel>();
 
         builder.Services.RegisterPlatformServices();
         return builder.Build();

@@ -83,6 +83,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="CommunityToolkit.Maui.Markup" Version="5.1.0" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.30" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.1" />

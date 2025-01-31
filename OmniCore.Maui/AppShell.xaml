@@ -13,4 +13,10 @@
         ContentTemplate="{DataTemplate pages:WelcomePage}"
         Route="welcome" />
 
+    <ShellContent
+        Title="Permissions"
+        Icon="{StaticResource IconRibbon}"
+        ContentTemplate="{DataTemplate pages:PermissionsPage}"
+        Route="permissions" />
+    
 </Shell>
