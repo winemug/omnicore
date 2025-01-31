@@ -75,20 +75,21 @@
 
         <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
         <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+        <MauiImage Update="Resources\Images\dotnet_bot.png">
+          <Resize>True</Resize>
+          <BaseSize>300,185</BaseSize>
+        </MauiImage>
 
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.1" />
+        <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.30" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.1" />
         <PackageReference Include="Polly" Version="8.5.1" />
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
-        <PackageReference Include="CommunityToolkit.Maui" Version="9.1.0" />
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+        <PackageReference Include="CommunityToolkit.Maui" Version="11.0.0" />
+        <PackageReference Include="Syncfusion.Maui.Toolkit" Version="1.0.2" />
     </ItemGroup>
 
     <ItemGroup>
@@ -102,4 +103,17 @@
         <Generator>MSBuild:UpdateGeneratedFiles</Generator>
       </AndroidResource>
     </ItemGroup>
+
+    <ItemGroup>
+      <MauiXaml Update="Resources\Styles\AppStyles.xaml">
+        <SubType>Designer</SubType>
+      </MauiXaml>
+      <MauiXaml Update="Resources\Styles\Colors.xaml">
+        <SubType>Designer</SubType>
+      </MauiXaml>
+      <MauiXaml Update="Resources\Styles\Styles.xaml">
+        <SubType>Designer</SubType>
+      </MauiXaml>
+    </ItemGroup>
+
 </Project>
