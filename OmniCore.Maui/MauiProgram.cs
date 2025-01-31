@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Maui;
 using Fonts;
 using Microsoft.Extensions.Logging;
-using OmniCore.Services.Interfaces.Platform;
+using OmniCore.Maui.Models;
 
 namespace OmniCore.Maui;
 
@@ -23,11 +23,14 @@ public static class MauiProgram
                 fonts.AddFont("SegoeUI-Semibold.ttf", "SegoeSemibold");
                 fonts.AddFont("FluentSystemIcons-Regular.ttf", FluentUI.FontFamily);
             });
+        
 
 #if DEBUG
         builder.Logging.AddDebug();
         builder.Services.AddLogging(configure => configure.AddDebug());
 #endif
+
+        builder.Services.AddSingleton<WelcomeModel>();
 
         builder.Services.RegisterPlatformServices();
         return builder.Build();
