@@ -21,6 +21,5 @@ public class MainApplication : MauiApplication
     {
     }
 
-    protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp(
-        new PlatformInfo(), new PlatformService());
+    protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
 }

@@ -7,13 +7,12 @@ namespace OmniCore.Maui;
 
 public static class MauiProgram
 {
-    public static MauiApp CreateMauiApp(IPlatformInfo platformInfo, IPlatformService platformService)
+    public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
             .UseMauiCommunityToolkit()
-            .RegisterAppServices(platformInfo, platformService)
             .ConfigureMauiHandlers(handlers =>
             {
             })
@@ -30,15 +29,7 @@ public static class MauiProgram
         builder.Services.AddLogging(configure => configure.AddDebug());
 #endif
 
+        builder.Services.RegisterPlatformServices();
         return builder.Build();
-    }
-
-    public static MauiAppBuilder RegisterAppServices(this MauiAppBuilder mauiAppBuilder,
-        IPlatformInfo platformInfo, IPlatformService platformService)
-    {
-        mauiAppBuilder.Services.AddSingleton<IPlatformService>(platformService);
-        mauiAppBuilder.Services.AddSingleton<IPlatformInfo>(platformInfo);
-
-        return mauiAppBuilder;
     }
 }

@@ -4,7 +4,7 @@ using OmniCore.Services.Interfaces.Platform;
 using static Microsoft.Maui.ApplicationModel.Permissions;
 using Debug = System.Diagnostics.Debug;
 
-namespace OmniCore.Maui.Services
+namespace OmniCore.Maui
 {
     public class PlatformInfo : IPlatformInfo
     {
