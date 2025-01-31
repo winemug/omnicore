@@ -83,7 +83,6 @@
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.1" />
         <PackageReference Include="Polly" Version="8.5.1" />
         <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.30" />
-        <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.30" />
     </ItemGroup>
 
     <ItemGroup>
