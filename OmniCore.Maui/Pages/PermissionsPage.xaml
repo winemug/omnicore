@@ -17,7 +17,15 @@
         <CollectionView.ItemTemplate>
             <DataTemplate x:DataType="models:DynamicPermission">
                 <Label Text="{Binding ShortName}"
-                       TextColor="{Binding IsGranted, Converter={StaticResource IsGrantedConverter}}"/>
+                       TextColor="{Binding IsGranted,
+                       Converter={StaticResource IsGrantedConverter}}"
+                       BackgroundColor="#404040"
+                       Margin="2,4,2,4"
+                >
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding RequestAndUpdateCommand}"/>
+                    </Label.GestureRecognizers>
+                </Label>
             </DataTemplate>
         </CollectionView.ItemTemplate>
     </CollectionView>

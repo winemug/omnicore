@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -8,14 +9,16 @@ public partial class PermissionsModel : PageModel
 {
     [ObservableProperty] List<DynamicPermission> _dynamicPermissions =
     [
-        new DynamicPermission("android.permission.ACCESS_NETWORK_STATE", false),
-        new DynamicPermission("android.permission.INTERNET", false),
-        new DynamicPermission("android.permission.BLUETOOTH_CONNECT", false),
-        new DynamicPermission("android.permission.BLUETOOTH_SCAN", false),
-        new DynamicPermission("android.permission.POST_NOTIFICATIONS", false),
-        new DynamicPermission("android.permission.FOREGROUND_SERVICE", false),
-        new DynamicPermission("android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED", false),
-        new DynamicPermission("android.permission.SCHEDULE_EXACT_ALARM", false),
+        new DynamicPermission(permissionName: "android.permission.INTERNET", true),
+        new DynamicPermission(permissionName: "android.permission.ACCESS_NETWORK_STATE", true),
+        new DynamicPermission(permissionName: "android.permission.CHANGE_NETWORK_STATE", true),
+        
+        new DynamicPermission(permissionName: "android.permission.BLUETOOTH_CONNECT", true),
+        new DynamicPermission(permissionName: "android.permission.BLUETOOTH_SCAN", true),
+        
+        new DynamicPermission(permissionName: "android.permission.POST_NOTIFICATIONS", true),
+        new DynamicPermission(permissionName: "android.permission.FOREGROUND_SERVICE", true),
+        new DynamicPermission(permissionName: "android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE", true),
     ];
 
     protected override async Task Appearing()
@@ -32,18 +35,27 @@ public partial class PermissionsModel : PageModel
         }
     }
 }
-public class DynamicPermission(string permissionName, bool isRuntime) : Permissions.BasePlatformPermission
+public class DynamicPermission : Permissions.BasePlatformPermission
 {
-    private PermissionStatus _lastStatus = PermissionStatus.Unknown;
-    public string ShortName => permissionName.Substring(permissionName.LastIndexOf('.') + 1);
-    public bool IsGranted => _lastStatus == PermissionStatus.Granted;
-    public override string ToString()
+    private readonly string _permissionName;
+    private readonly bool _isRuntime;
+
+    public DynamicPermission(string permissionName, bool isRuntime)
     {
-        return $"{permissionName}, {isRuntime} = {_lastStatus}";
+        _permissionName = permissionName;
+        _isRuntime = isRuntime;
+        RequestAndUpdateCommand = new RelayCommand(async () =>
+        {
+            await RequestAndUpdateStatusAsync();
+        });
     }
+    private PermissionStatus _lastStatus = PermissionStatus.Unknown;
+    public string ShortName => _permissionName.Substring(_permissionName.LastIndexOf('.') + 1);
+    public bool IsGranted => _lastStatus == PermissionStatus.Granted;
+    public ICommand RequestAndUpdateCommand { get; }
     public override (string androidPermission, bool isRuntime)[] RequiredPermissions => new[]
     {
-        (permissionName, isRuntime),
+        (_permissionName, _isRuntime),
     };
 
     public async Task UpdateStatusAsync()
