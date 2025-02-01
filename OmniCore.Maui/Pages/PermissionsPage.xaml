@@ -6,16 +6,19 @@
              xmlns:models="clr-namespace:OmniCore.Maui.Models"
              x:Class="OmniCore.Maui.Pages.PermissionsPage"
              x:DataType="models:PermissionsModel">
-    <VerticalStackLayout>
-        <HorizontalStackLayout>
-            <Label Text="Bluetooth"/>
-            <Label Text="{Binding Permission1Status}"/>
-            <Button Text="Ax" Command="{Binding RequestPermission1Command}"/>
-        </HorizontalStackLayout>
-        <HorizontalStackLayout>
-            <Label Text="Notifications"/>
-            <Label Text="{Binding Permission2Status}"/>
-            <Button Text="Ax" Command="{Binding RequestPermission2Command}"/>
-        </HorizontalStackLayout>
-    </VerticalStackLayout>
+    <CollectionView ItemsSource="{Binding DynamicPermissions}">
+        <CollectionView.Resources>
+            <Color x:Key="TrueColor">#309930</Color>
+            <Color x:Key="FalseColor">#E04040</Color>
+            <toolkit:BoolToObjectConverter x:Key="IsGrantedConverter" 
+                                           TrueObject="{StaticResource TrueColor}" 
+                                           FalseObject="{StaticResource FalseColor}"/>
+        </CollectionView.Resources>
+        <CollectionView.ItemTemplate>
+            <DataTemplate x:DataType="models:DynamicPermission">
+                <Label Text="{Binding ShortName}"
+                       TextColor="{Binding IsGranted, Converter={StaticResource IsGrantedConverter}}"/>
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+    </CollectionView>
 </ContentPage>
